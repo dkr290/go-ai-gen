@@ -1,0 +1,153 @@
+{{define "content"}}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-primary">
+            <h4><i class="bi bi-lightning-charge me-2"></i>Flux1-dev Text-to-Image</h4>
+            <p class="mb-0">Generate images using the Flux1-dev model with text prompts.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Generation Parameters</h5>
+            </div>
+            <div class="card-body">
+                <form hx-post="/api/flux1-dev-t2i" hx-target="#result" hx-indicator="#loading">
+                    <div class="mb-3">
+                        <label for="prompt" class="form-label">Prompt</label>
+                        <textarea class="form-control" id="prompt" name="prompt" rows="3" 
+                                  placeholder="Describe the image you want to generate..." required></textarea>
+                        <div class="form-text">Be descriptive for better results.</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="negative_prompt" class="form-label">Negative Prompt</label>
+                            <textarea class="form-control" id="negative_prompt" name="negative_prompt" rows="2"
+                                      placeholder="What you don't want in the image..."></textarea>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="style" class="form-label">Style</label>
+                            <select class="form-select" id="style" name="style">
+                                <option value="realistic">Realistic</option>
+                                <option value="anime">Anime</option>
+                                <option value="painting">Painting</option>
+                                <option value="digital_art">Digital Art</option>
+                                <option value="photographic">Photographic</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="width" class="form-label">Width</label>
+                            <select class="form-select" id="width" name="width">
+                                <option value="512">512px</option>
+                                <option value="768" selected>768px</option>
+                                <option value="1024">1024px</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="height" class="form-label">Height</label>
+                            <select class="form-select" id="height" name="height">
+                                <option value="512">512px</option>
+                                <option value="768" selected>768px</option>
+                                <option value="1024">1024px</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="steps" class="form-label">Steps</label>
+                            <input type="number" class="form-control" id="steps" name="steps" 
+                                   min="1" max="100" value="20">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="guidance_scale" class="form-label">Guidance Scale</label>
+                            <input type="range" class="form-range" id="guidance_scale" name="guidance_scale" 
+                                   min="1" max="20" step="0.5" value="7.5">
+                            <div class="form-text text-center" id="guidance_value">7.5</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="seed" class="form-label">Seed</label>
+                            <input type="number" class="form-control" id="seed" name="seed" 
+                                   placeholder="Random if empty">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-magic me-1"></i>Generate Image
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="loading" class="text-center" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Generating image...</p>
+                </div>
+                <div id="result">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-image display-1"></i>
+                        <p class="mt-2">Your generated image will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Model Info</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Flux1-dev</strong> is a state-of-the-art text-to-image model optimized for high-quality image generation.</p>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success me-2"></i>High resolution output</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Fast generation</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Multiple styles</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update guidance scale value display
+    document.getElementById('guidance_scale').addEventListener('input', function() {
+        document.getElementById('guidance_value').textContent = this.value;
+    });
+    
+    function resetForm() {
+        document.querySelector('form').reset();
+        document.getElementById('guidance_value').textContent = '7.5';
+        document.getElementById('result').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-image display-1"></i>
+                <p class="mt-2">Your generated image will appear here</p>
+            </div>
+        `;
+    }
+</script>
+{{end}}

@@ -1,0 +1,161 @@
+{{define "content"}}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h4><i class="bi bi-arrow-left-right me-2"></i>Stable Diffusion Image-to-Image</h4>
+            <p class="mb-0">Transform images using Stable Diffusion with img2img capabilities.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Image Transformation Parameters</h5>
+            </div>
+            <div class="card-body">
+                <form hx-post="/api/sd-i2i" hx-target="#result" hx-indicator="#loading" 
+                      hx-encoding="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="input_image" class="form-label">Input Image</label>
+                        <input type="file" class="form-control" id="input_image" name="input_image" 
+                               accept="image/*" required>
+                        <div class="form-text">Upload the image you want to transform.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="prompt" class="form-label">Transformation Prompt</label>
+                        <textarea class="form-control" id="prompt" name="prompt" rows="3" 
+                                  placeholder="Describe how you want to transform the image..." required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="denoising_strength" class="form-label">Denoising Strength</label>
+                            <input type="range" class="form-range" id="denoising_strength" name="denoising_strength" 
+                                   min="0.1" max="1.0" step="0.1" value="0.75">
+                            <div class="form-text text-center" id="denoise_value">0.75</div>
+                            <div class="form-text">Higher values = more transformation, lower values = more preservation.</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="model" class="form-label">Model Version</label>
+                            <select class="form-select" id="model" name="model">
+                                <option value="sd15">SD 1.5</option>
+                                <option value="sd21" selected>SD 2.1</option>
+                                <option value="sdxl">SD XL</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="steps" class="form-label">Steps</label>
+                            <input type="number" class="form-control" id="steps" name="steps" 
+                                   min="10" max="100" value="30">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="cfg_scale" class="form-label">CFG Scale</label>
+                            <input type="range" class="form-range" id="cfg_scale" name="cfg_scale" 
+                                   min="1" max="20" step="0.5" value="7.5">
+                            <div class="form-text text-center" id="cfg_value">7.5</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="seed" class="form-label">Seed</label>
+                            <input type="number" class="form-control" id="seed" name="seed" 
+                                   placeholder="Random if empty">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="negative_prompt" class="form-label">Negative Prompt</label>
+                        <textarea class="form-control" id="negative_prompt" name="negative_prompt" rows="2"
+                                  placeholder="What you don't want in the transformed image..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="inpainting" name="inpainting">
+                            <label class="form-check-label" for="inpainting">
+                                Enable Inpainting Mode
+                            </label>
+                        </div>
+                        <div class="form-text">Select specific areas to transform while preserving the rest.</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        </button>
+                        <button type="submit" class="btn btn-info">
+                            <i class="bi bi-arrow-left-right me-1"></i>Transform Image
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="loading" class="text-center" style="display: none;">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Transforming image...</p>
+                </div>
+                <div id="result">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-arrow-left-right display-1"></i>
+                        <p class="mt-2">Your transformed image will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Model Info</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Stable Diffusion Image-to-Image</strong> allows you to transform existing images while maintaining structure and composition.</p>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Structure preservation</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Style transfer</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Inpainting support</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update slider value displays
+    document.getElementById('denoising_strength').addEventListener('input', function() {
+        document.getElementById('denoise_value').textContent = this.value;
+    });
+    
+    document.getElementById('cfg_scale').addEventListener('input', function() {
+        document.getElementById('cfg_value').textContent = this.value;
+    });
+    
+    function resetForm() {
+        document.querySelector('form').reset();
+        document.getElementById('denoise_value').textContent = '0.75';
+        document.getElementById('cfg_value').textContent = '7.5';
+        document.getElementById('result').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-arrow-left-right display-1"></i>
+                <p class="mt-2">Your transformed image will appear here</p>
+            </div>
+        `;
+    }
+</script>
+{{end}}

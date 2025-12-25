@@ -1,0 +1,241 @@
+{{define "content"}}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-indigo" style="background-color: #6610f2; color: white;">
+            <h4><i class="bi bi-collection me-2"></i>Qwen Multi Image-to-Image</h4>
+            <p class="mb-0">Transform multiple images using Qwen's batch processing capabilities.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Multiple Image Transformation</h5>
+            </div>
+            <div class="card-body">
+                <form hx-post="/api/qwen-i2i-multi" hx-target="#result" hx-indicator="#loading" 
+                      hx-encoding="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="input_images" class="form-label">Input Images</label>
+                        <input type="file" class="form-control" id="input_images" name="input_images" 
+                               accept="image/*" multiple required>
+                        <div class="form-text">Select multiple images to transform (up to 10 images).</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="prompt" class="form-label">Transformation Prompt</label>
+                        <textarea class="form-control" id="prompt" name="prompt" rows="3" 
+                                  placeholder="Describe how you want to transform the images..." required></textarea>
+                        <div class="form-text">This prompt will be applied to all selected images.</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="batch_mode" class="form-label">Batch Mode</label>
+                            <select class="form-select" id="batch_mode" name="batch_mode">
+                                <option value="parallel">Parallel Processing</option>
+                                <option value="sequential" selected>Sequential Processing</option>
+                                <option value="style_consistent">Style Consistent</option>
+                            </select>
+                            <div class="form-text">
+                                Parallel: Process all at once (faster)<br>
+                                Sequential: Process one by one (more stable)<br>
+                                Style Consistent: Ensure consistent style across all images
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="transformation_type" class="form-label">Transformation Type</label>
+                            <select class="form-select" id="transformation_type" name="transformation_type">
+                                <option value="batch_style_transfer">Batch Style Transfer</option>
+                                <option value="batch_enhancement">Batch Enhancement</option>
+                                <option value="consistent_style">Consistent Style</option>
+                                <option value="theme_application">Theme Application</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="qwen_model" class="form-label">Qwen Model</label>
+                            <select class="form-select" id="qwen_model" name="qwen_model">
+                                <option value="qwen2.5-vl">Qwen2.5-VL</option>
+                                <option value="qwen2-vl" selected>Qwen2-VL</option>
+                                <option value="qwen-vl">Qwen-VL</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="steps" class="form-label">Steps per Image</label>
+                            <input type="number" class="form-control" id="steps" name="steps" 
+                                   min="10" max="40" value="20">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="strength" class="form-label">Transformation Strength</label>
+                            <input type="range" class="form-range" id="strength" name="strength" 
+                                   min="0.1" max="1.0" step="0.1" value="0.6">
+                            <div class="form-text text-center" id="strength_value">0.6</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="style_preset" class="form-label">Style Preset</label>
+                        <select class="form-select" id="style_preset" name="style_preset">
+                            <option value="none">No Style</option>
+                            <option value="consistent_art">Consistent Art Style</option>
+                            <option value="photo_series">Photo Series</option>
+                            <option value="art_collection">Art Collection</option>
+                            <option value="theme_pack">Theme Pack</option>
+                        </select>
+                        <div class="form-text">Choose a preset for consistent styling across all images.</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="seed" class="form-label">Seed</label>
+                            <input type="number" class="form-control" id="seed" name="seed" 
+                                   placeholder="Random if empty">
+                            <div class="form-text">Using the same seed ensures consistent transformations.</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="output_format" class="form-label">Output Format</label>
+                            <select class="form-select" id="output_format" name="output_format">
+                                <option value="individual">Individual Images</option>
+                                <option value="grid" selected>Image Grid</option>
+                                <option value="zip">ZIP Archive</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="negative_prompt" class="form-label">Negative Prompt</label>
+                        <textarea class="form-control" id="negative_prompt" name="negative_prompt" rows="2"
+                                  placeholder="What you don't want in the transformed images..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="preserve_original_order" name="preserve_original_order" checked>
+                            <label class="form-check-label" for="preserve_original_order">
+                                Preserve Original Order
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="maintain_aspect_ratio" name="maintain_aspect_ratio" checked>
+                            <label class="form-check-label" for="maintain_aspect_ratio">
+                                Maintain Aspect Ratio
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        </button>
+                        <button type="submit" class="btn btn-indigo" style="background-color: #6610f2; border-color: #6610f2;">
+                            <i class="bi bi-collection me-1"></i>Transform Images
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="loading" class="text-center" style="display: none;">
+                    <div class="spinner-border" style="color: #6610f2;" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Processing batch of images...</p>
+                    <div class="progress mt-2">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div id="result">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-collection display-1"></i>
+                        <p class="mt-2">Your transformed images will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Model Info</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Qwen Multi Image-to-Image</strong> is designed for batch processing of multiple images with consistent transformations and styling.</p>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Batch processing</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Consistent styling</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Multiple output formats</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Parallel processing options</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update strength value display
+    document.getElementById('strength').addEventListener('input', function() {
+        document.getElementById('strength_value').textContent = this.value;
+    });
+    
+    // File selection feedback
+    document.getElementById('input_images').addEventListener('change', function() {
+        const fileCount = this.files.length;
+        if (fileCount > 0) {
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'alert alert-info mt-2';
+            fileInfo.innerHTML = `<i class="bi bi-info-circle me-2"></i>Selected ${fileCount} image(s)`;
+            this.parentNode.appendChild(fileInfo);
+            
+            // Remove after 3 seconds
+            setTimeout(() => fileInfo.remove(), 3000);
+        }
+    });
+    
+    function resetForm() {
+        document.querySelector('form').reset();
+        document.getElementById('strength_value').textContent = '0.6';
+        document.getElementById('result').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-collection display-1"></i>
+                <p class="mt-2">Your transformed images will appear here</p>
+            </div>
+        `;
+    }
+</script>
+
+<style>
+    .btn-indigo {
+        background-color: #6610f2;
+        border-color: #6610f2;
+        color: white;
+    }
+    
+    .btn-indigo:hover {
+        background-color: #560bd0;
+        border-color: #560bd0;
+        color: white;
+    }
+    
+    .alert-indigo {
+        background-color: #6610f2;
+        border-color: #6610f2;
+        color: white;
+    }
+</style>
+{{end}}

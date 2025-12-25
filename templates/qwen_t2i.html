@@ -1,0 +1,178 @@
+{{define "content"}}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-danger">
+            <h4><i class="bi bi-robot me-2"></i>Qwen Text-to-Image</h4>
+            <p class="mb-0">Generate images using Qwen's advanced text-to-image capabilities.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Generation Parameters</h5>
+            </div>
+            <div class="card-body">
+                <form hx-post="/api/qwen-t2i" hx-target="#result" hx-indicator="#loading">
+                    <div class="mb-3">
+                        <label for="prompt" class="form-label">Prompt</label>
+                        <textarea class="form-control" id="prompt" name="prompt" rows="3" 
+                                  placeholder="Describe the image you want to generate..." required></textarea>
+                        <div class="form-text">Qwen understands complex prompts with multiple elements.</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="qwen_model" class="form-label">Qwen Model</label>
+                            <select class="form-select" id="qwen_model" name="qwen_model">
+                                <option value="qwen2.5-vl">Qwen2.5-VL</option>
+                                <option value="qwen2-vl" selected>Qwen2-VL</option>
+                                <option value="qwen-vl">Qwen-VL</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="aspect_ratio" class="form-label">Aspect Ratio</label>
+                            <select class="form-select" id="aspect_ratio" name="aspect_ratio">
+                                <option value="1:1">Square (1:1)</option>
+                                <option value="4:3">Standard (4:3)</option>
+                                <option value="16:9" selected>Widescreen (16:9)</option>
+                                <option value="3:2">Photo (3:2)</option>
+                                <option value="9:16">Portrait (9:16)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="resolution" class="form-label">Resolution</label>
+                            <select class="form-select" id="resolution" name="resolution">
+                                <option value="512">512px (Low)</option>
+                                <option value="768" selected>768px (Medium)</option>
+                                <option value="1024">1024px (High)</option>
+                                <option value="1536">1536px (Ultra)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="steps" class="form-label">Steps</label>
+                            <input type="number" class="form-control" id="steps" name="steps" 
+                                   min="10" max="100" value="30">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="guidance" class="form-label">Guidance Scale</label>
+                            <input type="range" class="form-range" id="guidance" name="guidance" 
+                                   min="1" max="15" step="0.5" value="5.0">
+                            <div class="form-text text-center" id="guidance_value">5.0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="style_preset" class="form-label">Style Preset</label>
+                        <select class="form-select" id="style_preset" name="style_preset">
+                            <option value="none">No Style</option>
+                            <option value="photorealistic">Photorealistic</option>
+                            <option value="anime" selected>Anime</option>
+                            <option value="digital_art">Digital Art</option>
+                            <option value="painting">Painting</option>
+                            <option value="sketch">Sketch</option>
+                            <option value="watercolor">Watercolor</option>
+                            <option value="cyberpunk">Cyberpunk</option>
+                            <option value="fantasy">Fantasy</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="seed" class="form-label">Seed</label>
+                            <input type="number" class="form-control" id="seed" name="seed" 
+                                   placeholder="Random if empty">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="batch_size" class="form-label">Batch Size</label>
+                            <select class="form-select" id="batch_size" name="batch_size">
+                                <option value="1">1 image</option>
+                                <option value="2" selected>2 images</option>
+                                <option value="4">4 images</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="negative_prompt" class="form-label">Negative Prompt</label>
+                        <textarea class="form-control" id="negative_prompt" name="negative_prompt" rows="2"
+                                  placeholder="What you don't want in the image..."></textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-robot me-1"></i>Generate Images
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="loading" class="text-center" style="display: none;">
+                    <div class="spinner-border text-danger" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Generating images...</p>
+                </div>
+                <div id="result">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-robot display-1"></i>
+                        <p class="mt-2">Your generated images will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Model Info</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Qwen</strong> is a multimodal AI model with advanced text-to-image capabilities, understanding complex prompts and generating high-quality images.</p>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Multimodal understanding</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Complex prompt handling</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Multiple style options</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update guidance scale value display
+    document.getElementById('guidance').addEventListener('input', function() {
+        document.getElementById('guidance_value').textContent = this.value;
+    });
+    
+    function resetForm() {
+        document.querySelector('form').reset();
+        document.getElementById('guidance_value').textContent = '5.0';
+        document.getElementById('result').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-robot display-1"></i>
+                <p class="mt-2">Your generated images will appear here</p>
+            </div>
+        `;
+    }
+</script>
+{{end}}

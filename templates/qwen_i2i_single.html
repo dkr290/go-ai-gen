@@ -1,0 +1,197 @@
+{{define "content"}}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-purple" style="background-color: #6f42c1; color: white;">
+            <h4><i class="bi bi-image-alt me-2"></i>Qwen Single Image-to-Image</h4>
+            <p class="mb-0">Transform a single image using Qwen's image-to-image capabilities.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Single Image Transformation</h5>
+            </div>
+            <div class="card-body">
+                <form hx-post="/api/qwen-i2i-single" hx-target="#result" hx-indicator="#loading" 
+                      hx-encoding="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="input_image" class="form-label">Input Image</label>
+                        <input type="file" class="form-control" id="input_image" name="input_image" 
+                               accept="image/*" required>
+                        <div class="form-text">Upload a single image to transform.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="prompt" class="form-label">Transformation Prompt</label>
+                        <textarea class="form-control" id="prompt" name="prompt" rows="3" 
+                                  placeholder="Describe how you want to transform the image..." required></textarea>
+                        <div class="form-text">Qwen can understand complex transformation requests.</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="transformation_type" class="form-label">Transformation Type</label>
+                            <select class="form-select" id="transformation_type" name="transformation_type">
+                                <option value="style_transfer">Style Transfer</option>
+                                <option value="enhancement">Enhancement</option>
+                                <option value="restoration">Restoration</option>
+                                <option value="colorization">Colorization</option>
+                                <option value="super_resolution">Super Resolution</option>
+                                <option value="background_change">Background Change</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="strength" class="form-label">Transformation Strength</label>
+                            <input type="range" class="form-range" id="strength" name="strength" 
+                                   min="0.1" max="1.0" step="0.1" value="0.7">
+                            <div class="form-text text-center" id="strength_value">0.7</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="qwen_model" class="form-label">Qwen Model</label>
+                            <select class="form-select" id="qwen_model" name="qwen_model">
+                                <option value="qwen2.5-vl">Qwen2.5-VL</option>
+                                <option value="qwen2-vl" selected>Qwen2-VL</option>
+                                <option value="qwen-vl">Qwen-VL</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="steps" class="form-label">Steps</label>
+                            <input type="number" class="form-control" id="steps" name="steps" 
+                                   min="10" max="50" value="25">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="style_preset" class="form-label">Style Preset (Optional)</label>
+                        <select class="form-select" id="style_preset" name="style_preset">
+                            <option value="none">No Style</option>
+                            <option value="anime">Anime</option>
+                            <option value="painting">Painting</option>
+                            <option value="sketch">Sketch</option>
+                            <option value="watercolor">Watercolor</option>
+                            <option value="oil_painting">Oil Painting</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="seed" class="form-label">Seed</label>
+                            <input type="number" class="form-control" id="seed" name="seed" 
+                                   placeholder="Random if empty">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="preserve_details" class="form-label">Detail Preservation</label>
+                            <input type="range" class="form-range" id="preserve_details" name="preserve_details" 
+                                   min="0.1" max="1.0" step="0.1" value="0.8">
+                            <div class="form-text text-center" id="detail_value">0.8</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="negative_prompt" class="form-label">Negative Prompt</label>
+                        <textarea class="form-control" id="negative_prompt" name="negative_prompt" rows="2"
+                                  placeholder="What you don't want in the transformed image..."></textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        </button>
+                        <button type="submit" class="btn btn-purple" style="background-color: #6f42c1; border-color: #6f42c1;">
+                            <i class="bi bi-image-alt me-1"></i>Transform Image
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="loading" class="text-center" style="display: none;">
+                    <div class="spinner-border" style="color: #6f42c1;" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Transforming image...</p>
+                </div>
+                <div id="result">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-image-alt display-1"></i>
+                        <p class="mt-2">Your transformed image will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Model Info</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Qwen Single Image-to-Image</strong> specializes in transforming individual images with precise control over the transformation process.</p>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Single image focus</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Detail preservation</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Multiple transformation types</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update slider value displays
+    document.getElementById('strength').addEventListener('input', function() {
+        document.getElementById('strength_value').textContent = this.value;
+    });
+    
+    document.getElementById('preserve_details').addEventListener('input', function() {
+        document.getElementById('detail_value').textContent = this.value;
+    });
+    
+    function resetForm() {
+        document.querySelector('form').reset();
+        document.getElementById('strength_value').textContent = '0.7';
+        document.getElementById('detail_value').textContent = '0.8';
+        document.getElementById('result').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-image-alt display-1"></i>
+                <p class="mt-2">Your transformed image will appear here</p>
+            </div>
+        `;
+    }
+</script>
+
+<style>
+    .btn-purple {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+        color: white;
+    }
+    
+    .btn-purple:hover {
+        background-color: #5a32a3;
+        border-color: #5a32a3;
+        color: white;
+    }
+    
+    .alert-purple {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+        color: white;
+    }
+</style>
+{{end}}

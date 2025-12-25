@@ -1,0 +1,148 @@
+{{define "content"}}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-success">
+            <h4><i class="bi bi-arrow-repeat me-2"></i>Flux1-Kontext Image-to-Image</h4>
+            <p class="mb-0">Transform images using the Flux1-Kontext model with context-aware processing.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Image Transformation Parameters</h5>
+            </div>
+            <div class="card-body">
+                <form hx-post="/api/flux1-kontext-i2i" hx-target="#result" hx-indicator="#loading" 
+                      hx-encoding="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="input_image" class="form-label">Input Image</label>
+                        <input type="file" class="form-control" id="input_image" name="input_image" 
+                               accept="image/*" required>
+                        <div class="form-text">Upload the image you want to transform.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="prompt" class="form-label">Transformation Prompt</label>
+                        <textarea class="form-control" id="prompt" name="prompt" rows="3" 
+                                  placeholder="Describe how you want to transform the image..." required></textarea>
+                        <div class="form-text">Describe the desired transformation (e.g., "make it look like a painting", "change to anime style").</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="strength" class="form-label">Transformation Strength</label>
+                            <input type="range" class="form-range" id="strength" name="strength" 
+                                   min="0.1" max="1.0" step="0.1" value="0.5">
+                            <div class="form-text text-center" id="strength_value">0.5</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="context_weight" class="form-label">Context Weight</label>
+                            <input type="range" class="form-range" id="context_weight" name="context_weight" 
+                                   min="0.1" max="2.0" step="0.1" value="1.0">
+                            <div class="form-text text-center" id="context_value">1.0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="style" class="form-label">Style Preset</label>
+                            <select class="form-select" id="style" name="style">
+                                <option value="enhance">Enhance</option>
+                                <option value="artistic">Artistic</option>
+                                <option value="anime">Anime</option>
+                                <option value="realistic">Realistic</option>
+                                <option value="sketch">Sketch</option>
+                                <option value="watercolor">Watercolor</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="steps" class="form-label">Steps</label>
+                            <input type="number" class="form-control" id="steps" name="steps" 
+                                   min="10" max="50" value="25">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="negative_prompt" class="form-label">Negative Prompt</label>
+                        <textarea class="form-control" id="negative_prompt" name="negative_prompt" rows="2"
+                                  placeholder="What you don't want in the transformed image..."></textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-arrow-repeat me-1"></i>Transform Image
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="loading" class="text-center" style="display: none;">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Transforming image...</p>
+                </div>
+                <div id="result">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-images display-1"></i>
+                        <p class="mt-2">Your transformed image will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Model Info</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Flux1-Kontext</strong> is specialized for context-aware image-to-image transformations, preserving important elements while applying changes.</p>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Context preservation</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Style transfer</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>High-quality output</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update slider value displays
+    document.getElementById('strength').addEventListener('input', function() {
+        document.getElementById('strength_value').textContent = this.value;
+    });
+    
+    document.getElementById('context_weight').addEventListener('input', function() {
+        document.getElementById('context_value').textContent = this.value;
+    });
+    
+    function resetForm() {
+        document.querySelector('form').reset();
+        document.getElementById('strength_value').textContent = '0.5';
+        document.getElementById('context_value').textContent = '1.0';
+        document.getElementById('result').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-images display-1"></i>
+                <p class="mt-2">Your transformed image will appear here</p>
+            </div>
+        `;
+    }
+</script>
+{{end}}
