@@ -12,33 +12,24 @@ import (
 func main() {
 	// Create Fiber app with HTML template engine
 	engine := html.New("./templates", ".html")
+
 	app := fiber.New(fiber.Config{
 		Views: engine,
 	})
 
-	// Static files
-	app.Static("/static", "./static")
+	h := handlers.New()
 
 	// Routes
-	app.Get("/", handlers.HomeHandler)
+	app.Get("/", h.HandleHome)
 
 	// Submenu routes
-	app.Get("/flux1-dev-t2i", handlers.Flux1DevT2IHandler)
-	app.Get("/flux1-kontext-i2i", handlers.Flux1KontextI2IHandler)
-	app.Get("/sd-t2i", handlers.SdT2IHandler)
-	app.Get("/sd-i2i", handlers.SdI2IHandler)
-	app.Get("/qwen-t2i", handlers.QwenT2IHandler)
-	app.Get("/qwen-i2i-single", handlers.QwenI2ISingleHandler)
-	app.Get("/qwen-i2i-multi", handlers.QwenI2IMultiHandler)
-
-	// API endpoints for HTMX
-	app.Post("/api/flux1-dev-t2i", handlers.Flux1DevT2IAPIHandler)
-	app.Post("/api/flux1-kontext-i2i", handlers.Flux1KontextI2IAPIHandler)
-	app.Post("/api/sd-t2i", handlers.SdT2IAPIHandler)
-	app.Post("/api/sd-i2i", handlers.SdI2IAPIHandler)
-	app.Post("/api/qwen-t2i", handlers.QwenT2IAPIHandler)
-	app.Post("/api/qwen-i2i-single", handlers.QwenI2ISingleAPIHandler)
-	app.Post("/api/qwen-i2i-multi", handlers.QwenI2IMultiAPIHandler)
+	app.Get("/flux1-dev-t2i", h.Flux1DevT2IHandler)
+	app.Get("/flux1-kontext-i2i", h.Flux1KontextI2IHandler)
+	app.Get("/sd-t2i", h.SdT2IHandler)
+	app.Get("/sd-i2i", h.SdI2IHandler)
+	app.Get("/qwen-t2i", h.QwenT2IHandler)
+	app.Get("/qwen-i2i-single", h.QwenI2ISingleHandler)
+	app.Get("/qwen-i2i-multi", h.QwenI2IMultiHandler)
 
 	// Start server
 	port := os.Getenv("PORT")

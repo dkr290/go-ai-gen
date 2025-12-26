@@ -1,71 +1,99 @@
+{{define "content"}}
 <div class="row">
-    <div class="col-12">
-        <div class="alert alert-info">
-            <h4><i class="bi bi-info-circle me-2"></i>Welcome to AI Model Interface</h4>
-            <p class="mb-0">Select a model from the menu to start generating images.</p>
-        </div>
+  <div class="col-12">
+    <div class="alert alert-info">
+      <h4>
+        <i class="bi bi-info-circle me-2"></i>Welcome to AI Model Interface
+      </h4>
+      <p class="mb-0">
+        Select a model from the menu to start generating images.
+      </p>
     </div>
+  </div>
 </div>
 
 <div class="row mt-4">
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-lightning-charge text-warning me-2"></i>Text-to-Image</h5>
-                <p class="card-text">Generate images from text prompts using various AI models.</p>
-                <div class="mt-3">
-                    <span class="badge bg-primary me-2">Flux1-dev</span>
-                    <span class="badge bg-primary me-2">Stable Diffusion</span>
-                    <span class="badge bg-primary">Qwen</span>
-                </div>
-            </div>
+  <div class="col-md-4 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">
+          <i class="bi bi-lightning-charge text-warning me-2"></i>Text-to-Image
+        </h5>
+        <p class="card-text">
+          Generate images from text prompts using various AI models.
+        </p>
+        <div class="mt-3">
+          <span class="badge bg-primary me-2">Flux1-dev</span>
+          <span class="badge bg-primary me-2">Stable Diffusion</span>
+          <span class="badge bg-primary">Qwen</span>
         </div>
+      </div>
     </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-arrow-repeat text-success me-2"></i>Image-to-Image</h5>
-                <p class="card-text">Transform existing images using AI models with various styles and effects.</p>
-                <div class="mt-3">
-                    <span class="badge bg-success me-2">Flux1-Kontext</span>
-                    <span class="badge bg-success me-2">Stable Diffusion</span>
-                    <span class="badge bg-success">Qwen</span>
-                </div>
-            </div>
+  </div>
+
+  <div class="col-md-4 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">
+          <i class="bi bi-arrow-repeat text-success me-2"></i>Image-to-Image
+        </h5>
+        <p class="card-text">
+          Transform existing images using AI models with various styles and
+          effects.
+        </p>
+        <div class="mt-3">
+          <span class="badge bg-success me-2">Flux1-Kontext</span>
+          <span class="badge bg-success me-2">Stable Diffusion</span>
+          <span class="badge bg-success">Qwen</span>
         </div>
+      </div>
     </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-gear text-info me-2"></i>Features</h5>
-                <ul class="list-unstyled">
-                    <li><i class="bi bi-check-circle text-success me-2"></i>HTMX for dynamic updates</li>
-                    <li><i class="bi bi-check-circle text-success me-2"></i>Bootstrap 5.3 interface</li>
-                    <li><i class="bi bi-check-circle text-success me-2"></i>Python backend integration</li>
-                    <li><i class="bi bi-check-circle text-success me-2"></i>Multiple AI models</li>
-                </ul>
-            </div>
-        </div>
+  </div>
+
+  <div class="col-md-4 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">
+          <i class="bi bi-gear text-info me-2"></i>Features
+        </h5>
+        <ul class="list-unstyled">
+          <li>
+            <i class="bi bi-check-circle text-success me-2"></i>HTMX for dynamic
+            updates
+          </li>
+          <li>
+            <i class="bi bi-check-circle text-success me-2"></i>Bootstrap 5.3
+            interface
+          </li>
+          <li>
+            <i class="bi bi-check-circle text-success me-2"></i>Python backend
+            integration
+          </li>
+          <li>
+            <i class="bi bi-check-circle text-success me-2"></i>Multiple AI
+            models
+          </li>
+        </ul>
+      </div>
     </div>
+  </div>
 </div>
 
 <div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Quick Start</h5>
-            </div>
-            <div class="card-body">
-                <ol>
-                    <li>Select a model from the left menu</li>
-                    <li>Configure the parameters for your generation</li>
-                    <li>Submit the form to generate images</li>
-                    <li>Results will appear dynamically on the page</li>
-                </ol>
-            </div>
-        </div>
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Quick Start</h5>
+      </div>
+      <div class="card-body">
+        <ol>
+          <li>Select a model from the left menu</li>
+          <li>Configure the parameters for your generation</li>
+          <li>Submit the form to generate images</li>
+          <li>Results will appear dynamically on the page</li>
+        </ol>
+      </div>
     </div>
+  </div>
 </div>
-{{end}}
+{{ end }}
