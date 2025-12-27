@@ -1,7 +1,9 @@
 package main
 
 import (
+	"embed"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/dkr290/go-ai-gen/internal/handlers"
@@ -9,9 +11,12 @@ import (
 	"github.com/gofiber/template/html/v2"
 )
 
+//go:embed templates/*
+var viewsfs embed.FS
+
 func main() {
 	// Create Fiber app with HTML template engine
-	engine := html.New("./templates", ".html")
+	engine := html.NewFileSystem(http.FS(viewsfs), ".html")
 
 	app := fiber.New(fiber.Config{
 		Views: engine,

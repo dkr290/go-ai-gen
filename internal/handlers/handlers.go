@@ -12,7 +12,7 @@ func New() *Handler {
 }
 
 func (h *Handler) HandleHome(c *fiber.Ctx) error {
-	return c.Render("index", fiber.Map{"Title": "Home"}, "base")
+	return c.Render("templates/index", fiber.Map{"Title": "Home"}, "templates/base")
 }
 
 func (h *Handler) Flux1DevT2IHandler(c *fiber.Ctx) error {
@@ -32,7 +32,11 @@ func (h *Handler) SdI2IHandler(c *fiber.Ctx) error {
 }
 
 func (h *Handler) QwenT2IHandler(c *fiber.Ctx) error {
-	return c.SendString("Qwen-t2i API endpoint - will call Python script")
+	return c.Render(
+		"templates/qwen_t2i",
+		fiber.Map{"Title": "Qwen Text to image"},
+		"templates/base",
+	)
 }
 
 func (h *Handler) QwenI2ISingleHandler(c *fiber.Ctx) error {
