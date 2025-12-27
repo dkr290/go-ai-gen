@@ -21,7 +21,7 @@ func main() {
 	app := fiber.New(fiber.Config{
 		Views: engine,
 	})
-
+	app.Static("/images", "./images")
 	h := handlers.New()
 
 	// Routes

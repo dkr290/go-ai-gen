@@ -108,14 +108,31 @@
               />
               <div class="form-text text-center" id="guidance_value">4.0</div>
             </div>
+            <div class="col-md-4 mb-3">
+              <div class="form-check form-switch mt-4">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="low_vram"
+                  name="low_vram"
+                  value="true"
+                />
+                <label class="form-check-label" for="low_vram">
+                  Low VRAM Mode
+                </label>
+              </div>
+              <div class="form-text">
+                Enable for GPUs with less than 8GB VRAM
+              </div>
+            </div>
           </div>
 
           <div class="mb-3">
             <label for="style_preset" class="form-label">Style Preset</label>
             <select class="form-select" id="style_preset" name="style_preset">
               <option value="none">No Style</option>
-              <option value="photorealistic">Photorealistic</option>
-              <option value="anime" selected>Anime</option>
+              <option value="photorealistic" selected>Photorealistic</option>
+              <option value="anime">Anime</option>
               <option value="digital_art">Digital Art</option>
               <option value="painting">Painting</option>
               <option value="sketch">Sketch</option>
@@ -123,6 +140,31 @@
               <option value="cyberpunk">Cyberpunk</option>
               <option value="fantasy">Fantasy</option>
             </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="camera_shot" class="form-label">Camera Shot Type</label>
+            <select class="form-select" id="camera_shot" name="camera_shot">
+              <option value="">No specific shot (default)</option>
+              <option value="front shot">Front Shot</option>
+              <option value="wide angle shot">Wide Angle Shot</option>
+              <option value="close-up shot">Close-up Shot</option>
+              <option value="extreme close-up">Extreme Close-up</option>
+              <option value="medium shot">Medium Shot</option>
+              <option value="full shot">Full Shot</option>
+              <option value="long shot">Long Shot</option>
+              <option value="establishing shot">Establishing Shot</option>
+              <option value="overhead shot">Overhead Shot</option>
+              <option value="low angle shot">Low Angle Shot</option>
+              <option value="high angle shot">High Angle Shot</option>
+              <option value="dutch angle">Dutch Angle</option>
+              <option value="point of view">Point of View (POV)</option>
+              <option value="bird's eye view">Bird's Eye View</option>
+              <option value="worm's eye view">Worm's Eye View</option>
+            </select>
+            <div class="form-text">
+              Optional: Choose a camera shot type to control composition
+            </div>
           </div>
 
           <div class="row">
@@ -244,4 +286,35 @@
             </div>
         `;
   }
+  document.addEventListener("htmx:afterSwap", function (event) {
+    if (event.detail.target.id === "result") {
+      const response = event.detail.xhr.response;
+      try {
+        const data = JSON.parse(response);
+        if (
+          data.success &&
+          data.data.image_urls &&
+          data.data.image_urls.length > 0
+        ) {
+          let imagesHTML = '<div class="row">';
+          data.data.image_urls.forEach(function (url, index) {
+            imagesHTML += `
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <img src="${url}" class="card-img-top" alt="Generated image ${index + 1}">
+                                    <div class="card-body">
+                                        <p class="card-text text-muted small">Image ${index + 1}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+          });
+          imagesHTML += "</div>";
+          document.getElementById("result").innerHTML = imagesHTML;
+        }
+      } catch (e) {
+        console.error("Failed to parse response:", e);
+      }
+    }
+  });
 </script>

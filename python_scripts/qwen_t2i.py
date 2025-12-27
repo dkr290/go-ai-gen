@@ -6,7 +6,7 @@ import time
 import uuid
 
 import torch
-from diffusers import AutoPipelineForImage2Image
+from diffusers import AutoPipelineForText2Image
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
 
@@ -32,7 +32,7 @@ def load_pipeline(args):
     # Load Qwen-Image-Edit pipeline
     # Note: Qwen-Image-Edit uses a different pipeline structure
     # We'll use AutoPipelineForImage2Image which should work with Qwen models
-    pipe = AutoPipelineForImage2Image.from_pretrained(
+    pipe = AutoPipelineForText2Image.from_pretrained(
         args.model,
         torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
     )
@@ -40,7 +40,7 @@ def load_pipeline(args):
     print(f"✓ Loaded Qwen-Image-Edit model: {args.model}", file=sys.stderr, flush=True)
 
     # Memory optimizations
-    if args.low_vram:
+    if args.low_vram == "true":
         pipe.enable_model_cpu_offload()
         pipe.enable_attention_slicing("auto")
         print("✓ Low VRAM mode enabled", file=sys.stderr)
@@ -107,7 +107,8 @@ def main():
     # Performance flag
     parser.add_argument(
         "--low-vram",
-        action="store_true",
+        type=str,
+        default="false",
         help="Enable CPU offload and attention slicing for low VRAM GPUs",
     )
 

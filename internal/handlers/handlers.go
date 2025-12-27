@@ -4,6 +4,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,6 +58,8 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		Steps          int     `form:"steps"`
 		Guidance       float64 `form:"guidance"`
 		StylePreset    string  `form:"style_preset"`
+		CameraShot     string  `form:"camera_shot"`
+		LowVRAM        bool    `form:"low_vram"` // Add this field
 		Seed           int64   `form:"seed"`
 		BatchSize      int     `form:"batch_size"`
 		NegativePrompt string  `form:"negative_prompt"`
@@ -109,6 +115,16 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 	var enhancedPrompts []string
 	for _, prompt := range prompts {
 		enhanced := strings.TrimSpace(prompt)
+
+		if req.CameraShot != "" {
+			enhanced = utils.FormatCameraShot(req.CameraShot, enhanced)
+		}
+
+		if req.StylePreset != "" && req.StylePreset != "none" {
+			styleText := utils.MapStylePreset(req.StylePreset)
+			enhanced = enhanced + ", " + styleText
+		}
+
 		if req.Suffix != "" {
 			enhanced = enhanced + ", " + strings.TrimSpace(req.Suffix)
 		}
@@ -118,12 +134,71 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 	// Prepare response
 	totalImages := len(enhancedPrompts) * req.BatchSize
 
-	fmt.Println(enhancedPrompts)
-	fmt.Println(width)
-	fmt.Println(height)
-	fmt.Println(req.Steps)
-	fmt.Println(req.StylePreset)
-	fmt.Println(seed)
+	// Create output directory
+	outputDir := filepath.Join("images", "generated", fmt.Sprintf("%d", time.Now().Unix()))
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create output directory: " + err.Error(),
+		})
+	}
+
+	// Prepare prompts JSON for Python script
+	promptsJSON, err := json.Marshal(enhancedPrompts)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to marshal prompts: " + err.Error(),
+		})
+	}
+	// Call Python script
+	cmd := exec.Command("python3", "python_scripts/qwen_t2i.py",
+		"--model", req.QwenModel,
+		"--negative-prompt", req.NegativePrompt,
+		"--width", fmt.Sprintf("%d", width),
+		"--height", fmt.Sprintf("%d", height),
+		"--steps", fmt.Sprintf("%d", req.Steps),
+		"--guidance-scale", fmt.Sprintf("%.1f", req.Guidance),
+		"--seed", fmt.Sprintf("%d", seed),
+		"--output-dir", outputDir,
+		"--num-images", fmt.Sprintf("%d", req.BatchSize),
+		"--prompts", string(promptsJSON),
+		"--low-vram", strconv.FormatBool(req.LowVRAM),
+	)
+	output, err := cmd.CombinedOutput()
+	fmt.Printf("=== PYTHON OUTPUT ===\n%s\n", string(output))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":  "Python script failed: " + err.Error(),
+			"output": string(output),
+		})
+	}
+	// Parse Python script output
+	var pythonResult map[string]any
+	if err := json.Unmarshal(output, &pythonResult); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":      "Failed to parse Python output: " + err.Error(),
+			"raw_output": string(output),
+		})
+	}
+
+	if pythonResult["status"] == "error" {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Generation failed: " + pythonResult["error"].(string),
+		})
+	}
+
+	// Prepare image URLs for display
+	var imageURLs []string
+	if generations, ok := pythonResult["generations"].([]any); ok {
+		for _, gen := range generations {
+			if genMap, ok := gen.(map[string]any); ok {
+				if filename, ok := genMap["filename"].(string); ok {
+					// Convert file path to URL path
+					relPath := strings.TrimPrefix(outputDir, "static")
+					imageURLs = append(imageURLs, filepath.Join(relPath, filename))
+				}
+			}
+		}
+	}
 
 	return c.JSON(fiber.Map{
 		"success": true,
@@ -134,12 +209,12 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 			"height":          height,
 			"steps":           req.Steps,
 			"guidance":        req.Guidance,
-			"style_preset":    req.StylePreset,
 			"seed":            seed,
 			"batch_size":      req.BatchSize,
 			"total_images":    totalImages,
 			"qwen_model":      req.QwenModel,
 			"negative_prompt": req.NegativePrompt,
+			"image_urls":      imageURLs,
 		},
 	})
 }
