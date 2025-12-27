@@ -7,7 +7,9 @@ import (
 	"os"
 
 	"github.com/dkr290/go-ai-gen/internal/handlers"
+	"github.com/dkr290/go-ai-gen/utils"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/template/html/v2"
 )
 
@@ -21,6 +23,7 @@ func main() {
 	app := fiber.New(fiber.Config{
 		Views: engine,
 	})
+	app.Use(logger.New(utils.SetupLogger()))
 	app.Static("/images", "./images")
 	h := handlers.New()
 

@@ -3,8 +3,12 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 // Add this helper function
@@ -69,5 +73,35 @@ func FormatCameraShot(cameraShot, prompt string) string {
 		return "POV: " + prompt
 	default:
 		return cameraShot + " " + prompt
+	}
+}
+
+func SetupLogger() logger.Config {
+	logLevel := os.Getenv("LOG_LEVEL")
+	logFormat := os.Getenv("LOG_FORMAT")
+
+	var format string
+
+	switch logLevel {
+	case "verbose", "debug":
+		format = "${time} | ${status} | ${latency} | ${method} | ${path} | ${ip} | ${error}\n"
+		if logFormat == "json" {
+			format = `{"time":"${time}","status":"${status}","latency":"${latency}","method":"${method}","path":"${path}","ip":"${ip}","error":"${error}"}`
+		}
+	case "minimal":
+		format = "${status} | ${method} | ${path} | ${latency}\n"
+	case "none":
+		return logger.Config{
+			Next: func(c *fiber.Ctx) bool { return true }, // Skip all logging
+		}
+	default: // "info" or empty
+		format = "${time} | ${status} | ${latency} | ${method} | ${path}\n"
+	}
+
+	return logger.Config{
+		Format:     format,
+		TimeFormat: "2006-01-02 15:04:05",
+		TimeZone:   "Local",
+		Output:     os.Stdout,
 	}
 }
