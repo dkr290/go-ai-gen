@@ -4,10 +4,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/dkr290/go-ai-gen/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -48,7 +48,7 @@ func (h *Handler) QwenT2IHandler(c *fiber.Ctx) error {
 func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 	type QwenT2IRequest struct {
 		Prompt         string  `form:"prompt"`
-		PositiveMagic  string  `form:"positive_magic"`
+		Suffix         string  `form:"suffix"`
 		QwenModel      string  `form:"qwen_model"`
 		AspectRatio    string  `form:"aspect_ratio"`
 		Steps          int     `form:"steps"`
@@ -92,7 +92,7 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 	}
 
 	// Parse dimensions
-	width, height, err := parseDimensions(req.AspectRatio)
+	width, height, err := utils.ParseDimensions(req.AspectRatio)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid aspect ratio: " + err.Error(),
@@ -105,18 +105,25 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		seed = time.Now().UnixNano()
 	}
 
-	// Apply positive magic
+	// Apply suffix
 	var enhancedPrompts []string
 	for _, prompt := range prompts {
 		enhanced := strings.TrimSpace(prompt)
-		if req.PositiveMagic != "" {
-			enhanced = enhanced + ", " + strings.TrimSpace(req.PositiveMagic)
+		if req.Suffix != "" {
+			enhanced = enhanced + ", " + strings.TrimSpace(req.Suffix)
 		}
 		enhancedPrompts = append(enhancedPrompts, enhanced)
 	}
 
 	// Prepare response
 	totalImages := len(enhancedPrompts) * req.BatchSize
+
+	fmt.Println(enhancedPrompts)
+	fmt.Println(width)
+	fmt.Println(height)
+	fmt.Println(req.Steps)
+	fmt.Println(req.StylePreset)
+	fmt.Println(seed)
 
 	return c.JSON(fiber.Map{
 		"success": true,
@@ -135,30 +142,6 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 			"negative_prompt": req.NegativePrompt,
 		},
 	})
-}
-
-// Add this helper function
-func parseDimensions(dimStr string) (int, int, error) {
-	if dimStr == "" {
-		return 0, 0, fmt.Errorf("dimension string is empty")
-	}
-
-	parts := strings.Split(dimStr, "x")
-	if len(parts) != 2 {
-		return 0, 0, fmt.Errorf("expected 'WIDTHxHEIGHT' format")
-	}
-
-	width, err1 := strconv.Atoi(strings.TrimSpace(parts[0]))
-	height, err2 := strconv.Atoi(strings.TrimSpace(parts[1]))
-	if err1 != nil || err2 != nil {
-		return 0, 0, fmt.Errorf("invalid dimensions")
-	}
-
-	if width <= 0 || height <= 0 {
-		return 0, 0, fmt.Errorf("dimensions must be positive")
-	}
-
-	return width, height, nil
 }
 
 func (h *Handler) QwenI2ISingleHandler(c *fiber.Ctx) error {
