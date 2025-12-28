@@ -1,0 +1,58 @@
+name: Build and Push
+
+on:
+  workflow_call:
+    inputs:
+      docker_image_name:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      folder:
+        required: true
+        type: string
+      name:
+        required: false
+        type: string
+        default: ""
+      dockerfileName:
+        required: false
+        type: string
+        default: "Dockerfile"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    name: ${{ inputs.name }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Docker version and build
+        run: |
+          cd ${{ inputs.folder }}
+          ls -l
+          docker -v
+          docker build --build-arg BUILD_REF=${{ inputs.version }} --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` . -f ${{ inputs.dockerfileName }} -t ${{ inputs.docker_image_name }}
+          docker images -a
+
+      - name: Check if tag exists in GHCR
+        id: check-tag
+        run: |
+          IMAGE_NAME="${{ inputs.docker_image_name }}"
+          TAG="${{ inputs.version }}"
+          REPO="${IMAGE_NAME#ghcr.io/}"
+          EXISTS=$(curl -s -H "Authorization: Bearer ${{ github.token }}" \
+            "https://ghcr.io/v2/${REPO}/manifests/${TAG}" | grep -c 'errors')
+          if [ "$EXISTS" -eq 0 ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Docker login and push if tag does not exist
+        if: steps.check-tag.outputs.exists == 'false'
+        run: |
+          echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker tag ${{ inputs.docker_image_name }} ${{ inputs.docker_image_name }}:${{ inputs.version }}
+          docker push ${{ inputs.docker_image_name }}:${{ inputs.version }}
