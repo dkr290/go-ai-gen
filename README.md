@@ -64,3 +64,8 @@ The server will start on `http://localhost:8080`
 3. Implement actual image generation/transformation
 4. Add user authentication if needed
 5. Add image gallery/history
+
+## Some loras for testing
+
+- starsfriday/Qwen-Image-NSFW/qwen_image_nsfw.safetensors
+
