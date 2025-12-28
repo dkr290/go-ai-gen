@@ -202,6 +202,57 @@
               placeholder="What you don't want in the image..."
             ></textarea>
           </div>
+          <!-- LoRA Section -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="lora_enabled"
+                  name="lora_enabled"
+                  value="true"
+                  onchange="toggleLoraFields()"
+                />
+                <label class="form-check-label" for="lora_enabled">
+                  <strong>Enable LoRA</strong>
+                </label>
+              </div>
+            </div>
+            <div class="card-body" id="lora_fields" style="display: none">
+              <div class="mb-3">
+                <label for="lora_url" class="form-label">LoRA File URL</label>
+                <input
+                  type="url"
+                  class="form-control"
+                  id="lora_url"
+                  name="lora_url"
+                  placeholder="https://example.com/path/to/lora.safetensors"
+                  disabled
+                />
+                <div class="form-text">
+                  URL to download LoRA weights file (safetensors or .bin)
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="lora_adapter_name" class="form-label"
+                  >Adapter Name</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="lora_adapter_name"
+                  name="lora_adapter_name"
+                  placeholder="lora"
+                  value="lora"
+                  disabled
+                />
+                <div class="form-text">
+                  Name for the LoRA adapter (default: "lora")
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div class="d-grid gap-2 d-md-flex justify-content-md-end">
             <button
@@ -275,6 +326,28 @@
   document.getElementById("guidance").addEventListener("input", function () {
     document.getElementById("guidance_value").textContent = this.value;
   });
+  // Toggle LoRA fields
+  function toggleLoraFields() {
+    const loraEnabled = document.getElementById("lora_enabled").checked;
+    const loraFields = document.getElementById("lora_fields");
+    const loraUrl = document.getElementById("lora_url");
+    const loraAdapter = document.getElementById("lora_adapter_name");
+
+    if (loraEnabled) {
+      loraFields.style.display = "block";
+      loraUrl.disabled = false;
+      loraAdapter.disabled = false;
+      loraUrl.required = true;
+    } else {
+      loraFields.style.display = "none";
+      loraUrl.disabled = true;
+      loraAdapter.disabled = true;
+      loraUrl.required = false;
+    }
+  }
+
+  // Initialize on page load
+  document.addEventListener("DOMContentLoaded", toggleLoraFields);
 
   function resetForm() {
     document.querySelector("form").reset();
@@ -285,6 +358,7 @@
                 <p class="mt-2">Your generated images will appear here</p>
             </div>
         `;
+    toggleLoraFields();
   }
   document.addEventListener("htmx:afterSwap", function (event) {
     if (event.detail.target.id === "result") {

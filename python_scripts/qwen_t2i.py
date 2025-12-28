@@ -10,6 +10,13 @@ from diffusers import AutoPipelineForText2Image
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
 
+if "HF_HOME" not in os.environ:
+    os.environ["HF_HOME"] = "./downloads/models/.cache"
+    os.environ["TRANSFORMERS_CACHE"] = "./downloads/models/.cache"
+    os.environ["DIFFUSERS_CACHE"] = "./downloads/models/.cache"
+
+print(f"Hugging Face cache: {os.environ.get('HF_HOME')}", file=sys.stderr)
+
 
 def save_image(image: Image.Image, output_path: str) -> None:
     """Save image as PNG, matching Go's png.Encode behavior."""
@@ -57,6 +64,24 @@ def load_pipeline(args):
         print("✓ xformers enabled", file=sys.stderr)
     except Exception:
         print("⚠ xformers not available, using default attention", file=sys.stderr)
+
+    if args.lora_file:
+        print(f"Loading LoRA: {args.lora_file}", file=sys.stderr)
+        try:
+            # Get the directory containing the lora file
+            lora_dir = os.path.dirname(args.lora_file)
+            lora_filename = os.path.basename(args.lora_file)
+
+            # Load from local directory
+            pipe.load_lora_weights(
+                lora_dir,
+                weight_name=lora_filename,
+                adapter_name=args.lora_adapter_name,
+            )
+            print("✓ LoRA loaded successfully", file=sys.stderr)
+        except Exception as e:
+            print(f"⚠ LoRA loading failed: {e}", file=sys.stderr)
+            print("  Continuing without LoRA...", file=sys.stderr)
 
     print(f"✓ Pipeline loaded in {time.time() - start:.1f}s", file=sys.stderr)
 
@@ -110,6 +135,18 @@ def main():
         type=str,
         default="false",
         help="Enable CPU offload and attention slicing for low VRAM GPUs",
+    )
+    parser.add_argument(
+        "--lora-file",
+        type=str,
+        default="",
+        help="Pass lora weights as lora file from the card",
+    )
+    parser.add_argument(
+        "--lora-adapter-name",
+        type=str,
+        default="",
+        help="Pass the name of lora adapter name",
     )
 
     args = parser.parse_args()

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dkr290/go-ai-gen/internal/download"
+	"github.com/dkr290/go-ai-gen/internal/envs"
 	"github.com/dkr290/go-ai-gen/utils"
 	"github.com/gofiber/fiber/v2"
 )
@@ -51,18 +53,21 @@ func (h *Handler) QwenT2IHandler(c *fiber.Ctx) error {
 
 func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 	type QwenT2IRequest struct {
-		Prompt         string  `form:"prompt"`
-		Suffix         string  `form:"suffix"`
-		QwenModel      string  `form:"qwen_model"`
-		AspectRatio    string  `form:"aspect_ratio"`
-		Steps          int     `form:"steps"`
-		Guidance       float64 `form:"guidance"`
-		StylePreset    string  `form:"style_preset"`
-		CameraShot     string  `form:"camera_shot"`
-		LowVRAM        bool    `form:"low_vram"` // Add this field
-		Seed           int64   `form:"seed"`
-		BatchSize      int     `form:"batch_size"`
-		NegativePrompt string  `form:"negative_prompt"`
+		Prompt          string  `form:"prompt"`
+		Suffix          string  `form:"suffix"`
+		QwenModel       string  `form:"qwen_model"`
+		AspectRatio     string  `form:"aspect_ratio"`
+		Steps           int     `form:"steps"`
+		Guidance        float64 `form:"guidance"`
+		StylePreset     string  `form:"style_preset"`
+		CameraShot      string  `form:"camera_shot"`
+		LowVRAM         bool    `form:"low_vram"` // Add this field
+		Seed            int64   `form:"seed"`
+		BatchSize       int     `form:"batch_size"`
+		NegativePrompt  string  `form:"negative_prompt"`
+		LoraEnabled     bool    `form:"lora_enabled"`
+		LoraURL         string  `form:"lora_url"`
+		LoraAdapterName string  `form:"lora_adapter_name"`
 	}
 
 	req := new(QwenT2IRequest)
@@ -135,11 +140,37 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 	totalImages := len(enhancedPrompts) * req.BatchSize
 
 	// Create output directory
-	outputDir := filepath.Join("images", "generated", fmt.Sprintf("%d", time.Now().Unix()))
+	outputDir := filepath.Join("downloads", "generated", fmt.Sprintf("%d", time.Now().Unix()))
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create output directory: " + err.Error(),
 		})
+	}
+	// Handle LoRA download if enabled
+	loraFilePath := ""
+	if req.LoraEnabled && req.LoraURL != "" {
+		// Create lora directory if it doesn't exist
+		loraDir := filepath.Join("downloads", "lora")
+		if err := os.MkdirAll(loraDir, 0o755); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to create lora directory: " + err.Error(),
+			})
+		}
+
+		// Generate unique filename for lora file
+		loraFilename := fmt.Sprintf("lora_%d%s", time.Now().Unix(), filepath.Ext(req.LoraURL))
+		if strings.Contains(loraFilename, "?") {
+			loraFilename = strings.Split(loraFilename, "?")[0]
+		}
+		loraFilePath = filepath.Join(loraDir, loraFilename)
+
+		// Download the lora file
+		if err := download.DownloadFile(req.LoraURL, loraFilePath); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to download LoRA file: " + err.Error(),
+			})
+		}
+		fmt.Printf("✓ LoRA file downloaded to: %s\n", loraFilePath)
 	}
 
 	// Prepare prompts JSON for Python script
@@ -150,7 +181,8 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		})
 	}
 	// Call Python script
-	cmd := exec.Command("python3", "python_scripts/qwen_t2i.py",
+	args := []string{
+		"python3", "python_scripts/qwen_t2i.py",
 		"--model", req.QwenModel,
 		"--negative-prompt", req.NegativePrompt,
 		"--width", fmt.Sprintf("%d", width),
@@ -162,7 +194,21 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		"--num-images", fmt.Sprintf("%d", req.BatchSize),
 		"--prompts", string(promptsJSON),
 		"--low-vram", strconv.FormatBool(req.LowVRAM),
-	)
+	}
+	// Add LoRA arguments if enabled
+	if req.LoraEnabled && loraFilePath != "" {
+		args = append(args, "--lora-file", loraFilePath)
+		if req.LoraAdapterName != "" {
+			args = append(args, "--lora-adapter-name", req.LoraAdapterName)
+		} else {
+			args = append(args, "--lora-adapter-name", "lora")
+		}
+	}
+
+	cmd := exec.Command(args[0], args[1:]...)
+
+	envs.SetHuggingFaceEnv(cmd)
+
 	output, err := cmd.CombinedOutput()
 	fmt.Printf("=== PYTHON OUTPUT ===\n%s\n", string(output))
 	if err != nil {

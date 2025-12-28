@@ -24,7 +24,7 @@ func main() {
 		Views: engine,
 	})
 	app.Use(logger.New(utils.SetupLogger()))
-	app.Static("/images", "./images")
+	app.Static("/downloads", "./downloads")
 	h := handlers.New()
 
 	// Routes
