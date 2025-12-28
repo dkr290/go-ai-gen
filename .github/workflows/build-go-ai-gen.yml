@@ -2,9 +2,6 @@ name: Docker build and push go-ai-gen app
 
 on:
   push:
-    paths:
-      - "go-ai-gen/**"
-
     branches:
       - main
   pull_request:
