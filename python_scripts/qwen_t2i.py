@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import os
 import sys
 import time
@@ -12,7 +13,6 @@ from PIL import Image
 
 env_keys = [
     "HF_HOME",
-    "TRANSFORMERS_CACHE",
     "DIFFUSERS_CACHE",
     "HUGGINGFACE_HUB_CACHE",
     "HF_TOKEN",
@@ -40,6 +40,13 @@ def load_pipeline(args):
     print(f"Loading Qwen-t2i model: {args.model}", file=sys.stderr, flush=True)
 
     start = time.time()
+    # Force simple progress bars for downloads
+    os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "true"
+    os.environ["DISABLE_TQDM"] = "true"
+
+    logging.getLogger("huggingface_hub").setLevel(logging.INFO)
+    logging.basicConfig(level=logging.INFO)
+
     diffusers_logging.set_verbosity_error()
 
     # Load Qwen-Image-Edit pipeline
@@ -56,23 +63,27 @@ def load_pipeline(args):
     if args.low_vram == "true":
         pipe.enable_model_cpu_offload()
         pipe.enable_attention_slicing("auto")
-        print("✓ Low VRAM mode enabled", file=sys.stderr)
+        print("✓ Low VRAM mode enabled", file=sys.stderr, flush=True)
     else:
         if torch.cuda.is_available():
             pipe.to("cuda")
-            print("✓ Full GPU mode", file=sys.stderr)
+            print("✓ Full GPU mode", file=sys.stderr, flush=True)
         else:
-            print("✓ CPU mode", file=sys.stderr)
+            print("✓ CPU mode", file=sys.stderr, flush=True)
 
     # Try to enable xformers for memory efficiency
     try:
         pipe.enable_xformers_memory_efficient_attention()
-        print("✓ xformers enabled", file=sys.stderr)
+        print("✓ xformers enabled", file=sys.stderr, flush=True)
     except Exception:
-        print("⚠ xformers not available, using default attention", file=sys.stderr)
+        print(
+            "⚠ xformers not available, using default attention",
+            file=sys.stderr,
+            flush=True,
+        )
 
     if args.lora_file:
-        print(f"Loading LoRA: {args.lora_file}", file=sys.stderr)
+        print(f"Loading LoRA: {args.lora_file}", file=sys.stderr, flush=True)
         try:
             # Get the directory containing the lora file
             lora_dir = os.path.dirname(args.lora_file)

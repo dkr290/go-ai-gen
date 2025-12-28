@@ -84,8 +84,11 @@ RUN mkdir -p /run/sshd && \
   sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
   sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 # Expose SSH port
-EXPOSE 8080
+EXPOSE 22 8080
 
+# Copy startup script
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 # Start SSH server in foreground for Runpod
-CMD ["/app/go-ai-gen"]
+CMD ["/bin/bash", "/app/start.sh"]
 

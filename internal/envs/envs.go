@@ -24,7 +24,6 @@ func SetHuggingFaceEnv(cmd *exec.Cmd, hfToken string) {
 	// Set all relevant Hugging Face environment variables
 	env := append(os.Environ(),
 		"HF_HOME="+cacheDir,
-		"TRANSFORMERS_CACHE="+cacheDir,
 		"DIFFUSERS_CACHE="+cacheDir,
 		"HUGGINGFACE_HUB_CACHE="+cacheDir,
 	)

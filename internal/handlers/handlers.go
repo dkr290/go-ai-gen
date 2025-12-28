@@ -215,6 +215,10 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		envs.SetHuggingFaceEnv(cmd, "")
 	}
 
+	cmd.Env = append(cmd.Env, "HF_HUB_DISABLE_PROGRESS_BARS=true")
+	cmd.Env = append(cmd.Env, "DISABLE_TQDM=true")
+	cmd.Env = append(cmd.Env, "PYTHONUNBUFFERED=1")
+
 	// Create stdout pipe for capturing JSON output
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
