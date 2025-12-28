@@ -68,6 +68,7 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		LoraEnabled     bool    `form:"lora_enabled"`
 		LoraURL         string  `form:"lora_url"`
 		LoraAdapterName string  `form:"lora_adapter_name"`
+		HFToken         string  `form:"hf_token"` // Add this field
 	}
 
 	req := new(QwenT2IRequest)
@@ -207,7 +208,11 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 
 	cmd := exec.Command(args[0], args[1:]...)
 
-	envs.SetHuggingFaceEnv(cmd)
+	if req.HFToken != "" {
+		envs.SetHuggingFaceEnv(cmd, req.HFToken)
+	} else {
+		envs.SetHuggingFaceEnv(cmd, "")
+	}
 
 	output, err := cmd.CombinedOutput()
 	fmt.Printf("=== PYTHON OUTPUT ===\n%s\n", string(output))

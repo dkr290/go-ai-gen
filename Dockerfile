@@ -51,7 +51,7 @@ WORKDIR /app
 COPY --from=builder /app/go-ai-gen /app/
 
 # Copy Python script
-COPY python_scripts/*.py /app/python_scripts
+COPY python_scripts/*.py /app/python_scripts/
 
 
 # Install Python dependencies

@@ -202,6 +202,35 @@
               placeholder="What you don't want in the image..."
             ></textarea>
           </div>
+          <div class="card mb-3">
+            <div class="card-header">
+              <h6 class="mb-0">Hugging Face Authentication (Optional)</h6>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="hf_token" class="form-label"
+                  >Hugging Face Token</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="hf_token"
+                  name="hf_token"
+                  placeholder="hf_xxxxxxxxxxxxxxxxxxxx"
+                  autocomplete="off"
+                />
+                <div class="form-text">
+                  Required for gated/private models. Get your token from
+                  <a
+                    href="https://huggingface.co/settings/tokens"
+                    target="_blank"
+                    >Hugging Face Settings</a
+                  >. Your token is only used for this request and not stored.
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- LoRA Section -->
           <div class="card mb-3">
             <div class="card-header">

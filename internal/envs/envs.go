@@ -7,7 +7,7 @@ import (
 	"os/exec"
 )
 
-func SetHuggingFaceEnv(cmd *exec.Cmd) {
+func SetHuggingFaceEnv(cmd *exec.Cmd, hfToken string) {
 	// Determine cache directory
 	cacheDir := "./downloads/models/.cache"
 
@@ -28,6 +28,12 @@ func SetHuggingFaceEnv(cmd *exec.Cmd) {
 		"DIFFUSERS_CACHE="+cacheDir,
 		"HUGGINGFACE_HUB_CACHE="+cacheDir,
 	)
+
+	if hfToken != "" {
+		cmd.Env = append(os.Environ(),
+			"HF_TOKEN="+hfToken,
+		)
+	}
 
 	fmt.Printf("Set Hugging Face cache to: %s\n", cacheDir)
 }
