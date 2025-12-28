@@ -22,7 +22,7 @@ func SetHuggingFaceEnv(cmd *exec.Cmd, hfToken string) {
 	}
 
 	// Set all relevant Hugging Face environment variables
-	cmd.Env = append(os.Environ(),
+	env := append(os.Environ(),
 		"HF_HOME="+cacheDir,
 		"TRANSFORMERS_CACHE="+cacheDir,
 		"DIFFUSERS_CACHE="+cacheDir,
@@ -30,11 +30,9 @@ func SetHuggingFaceEnv(cmd *exec.Cmd, hfToken string) {
 	)
 
 	if hfToken != "" {
-		cmd.Env = append(os.Environ(),
-			"HF_TOKEN="+hfToken,
-		)
+		env = append(env, "HF_TOKEN="+hfToken)
 	}
-
+	cmd.Env = env
 	fmt.Printf("Set Hugging Face cache to: %s\n", cacheDir)
 }
 

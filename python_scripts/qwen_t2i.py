@@ -10,12 +10,18 @@ from diffusers import AutoPipelineForText2Image
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
 
-if "HF_HOME" not in os.environ:
-    os.environ["HF_HOME"] = "./downloads/models/.cache"
-    os.environ["TRANSFORMERS_CACHE"] = "./downloads/models/.cache"
-    os.environ["DIFFUSERS_CACHE"] = "./downloads/models/.cache"
+env_keys = [
+    "HF_HOME",
+    "TRANSFORMERS_CACHE",
+    "DIFFUSERS_CACHE",
+    "HUGGINGFACE_HUB_CACHE",
+    "HF_TOKEN",
+]
 
-print(f"Hugging Face cache: {os.environ.get('HF_HOME')}", file=sys.stderr)
+print("=== Hugging Face ENV ===")
+for key in env_keys:
+    print(f"{key}={os.environ.get(key)}")
+print("************************")
 
 
 def save_image(image: Image.Image, output_path: str) -> None:
