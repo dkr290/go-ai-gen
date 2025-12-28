@@ -18,10 +18,10 @@ env_keys = [
     "HF_TOKEN",
 ]
 
-print("=== Hugging Face ENV ===")
+print("=== Hugging Face ENV ===", file=sys.stderr, flush=True)
 for key in env_keys:
-    print(f"{key}={os.environ.get(key)}")
-print("************************")
+    print(f"{key}={os.environ.get(key)}", file=sys.stderr, flush=True)
+print("************************", file=sys.stderr, flush=True)
 
 
 def save_image(image: Image.Image, output_path: str) -> None:

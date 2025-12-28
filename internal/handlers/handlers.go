@@ -2,8 +2,10 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -205,7 +207,6 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 			args = append(args, "--lora-adapter-name", "lora")
 		}
 	}
-
 	cmd := exec.Command(args[0], args[1:]...)
 
 	if req.HFToken != "" {
@@ -214,20 +215,45 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		envs.SetHuggingFaceEnv(cmd, "")
 	}
 
-	output, err := cmd.CombinedOutput()
-	fmt.Printf("=== PYTHON OUTPUT ===\n%s\n", string(output))
+	// Create stdout pipe for capturing JSON output
+	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":  "Python script failed: " + err.Error(),
-			"output": string(output),
+			"error": "Failed to create stdout pipe: " + err.Error(),
 		})
 	}
+	// Stream stderr directly to terminal for real-time progress
+	cmd.Stderr = os.Stderr
+
+	// Start the command
+	if err := cmd.Start(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to start Python script: " + err.Error(),
+		})
+	}
+	// Capture stdout while also printing it
+	var stdoutBuffer bytes.Buffer
+	stdoutMulti := io.MultiWriter(&stdoutBuffer, os.Stdout)
+	if _, err := io.Copy(stdoutMulti, stdoutPipe); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to read Python output: " + err.Error(),
+		})
+	}
+
+	// Wait for command to complete
+	if err := cmd.Wait(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":  "Python script failed: " + err.Error(),
+			"stdout": stdoutBuffer.String(),
+		})
+	}
+
 	// Parse Python script output
 	var pythonResult map[string]any
-	if err := json.Unmarshal(output, &pythonResult); err != nil {
+	if err := json.Unmarshal(stdoutBuffer.Bytes(), &pythonResult); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":      "Failed to parse Python output: " + err.Error(),
-			"raw_output": string(output),
+			"raw_output": stdoutBuffer.String(),
 		})
 	}
 
