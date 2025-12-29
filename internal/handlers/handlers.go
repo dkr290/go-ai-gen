@@ -71,6 +71,7 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		LoraURL         string  `form:"lora_url"`
 		LoraAdapterName string  `form:"lora_adapter_name"`
 		HFToken         string  `form:"hf_token"` // Add this field
+		StaticSeed      string  `form:"static_seed"`
 	}
 
 	req := new(QwenT2IRequest)
@@ -213,6 +214,9 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 
 	if req.NegativePrompt != "" {
 		args = append(args, "--negative-prompt", req.NegativePrompt)
+	}
+	if req.StaticSeed == "true" {
+		args = append(args, "--static-seed", req.StaticSeed)
 	}
 
 	// Add LoRA arguments if enabled

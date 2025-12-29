@@ -67,6 +67,10 @@
             <div class="col-md-6 mb-3">
               <label for="aspect_ratio" class="form-label">Aspect Ratio</label>
               <select class="form-select" id="aspect_ratio" name="aspect_ratio">
+                <option value="512x512">Small Square 1:1 (512x512)</option>
+                <option value="768x512">Small Landscape 3:2 (768x512)</option>
+                <option value="512x768">Small Portrait 2:3 (512x768)</option>
+                <option value="1024x1024">Medium Square 1:1 (1024x1024)</option>
                 <option value="1328x1328">Square 1:1-(1328, 1328)</option>
                 <option value="1472x1140">Standard 4:3-(1472, 1140)</option>
                 <option value="1664x928">Widescreen 16:9-(1664x928)</option>
@@ -178,6 +182,19 @@
                 placeholder="Default 42"
                 value="42"
               />
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="static_seed"
+                  name="static_seed"
+                  value="true"
+                  checked
+                />
+                <label class="form-check-label" for="static_seed">
+                  Use static seed 42 (Qwen default)
+                </label>
+              </div>
             </div>
 
             <div class="col-md-6 mb-3">

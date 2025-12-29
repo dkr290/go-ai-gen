@@ -7,7 +7,7 @@ import time
 import uuid
 
 import torch
-from diffusers import AutoPipelineForText2Image
+from diffusers import DiffusionPipeline
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
 
@@ -48,14 +48,21 @@ def load_pipeline(args):
     logging.basicConfig(level=logging.INFO)
 
     diffusers_logging.set_verbosity_error()
+    if torch.cuda.is_available():
+        torch_dtype = torch.bfloat16
+        device = "cuda"
+    else:
+        torch_dtype = torch.float32
+        device = "cpu"
 
     # Load Qwen-Image-Edit pipeline
     # Note: Qwen-Image-Edit uses a different pipeline structure
     # We'll use AutoPipelineForImage2Image which should work with Qwen models
-    pipe = AutoPipelineForText2Image.from_pretrained(
+    pipe = DiffusionPipeline.from_pretrained(
         args.model,
-        torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+        torch_dtype=torch_dtype,
     )
+    pipe = pipe.to(device)
     pipe.set_progress_bar_config(disable=None)
     print(f"✓ Loaded Qwen-Image-Edit model: {args.model}", file=sys.stderr, flush=True)
 
@@ -63,6 +70,8 @@ def load_pipeline(args):
     if args.low_vram == "true":
         pipe.enable_model_cpu_offload()
         pipe.enable_attention_slicing("auto")
+        pipe.enable_vae_slicing()
+        pipe.enable_vae_tiling()
         print("✓ Low VRAM mode enabled", file=sys.stderr, flush=True)
     else:
         if torch.cuda.is_available():
@@ -165,6 +174,12 @@ def main():
         default="",
         help="Pass the name of lora adapter name",
     )
+    parser.add_argument(
+        "--static-seed",
+        type=str,
+        default="false",
+        help="Always use seed 42 (Qwen default) if true",
+    )
 
     args = parser.parse_args()
 
@@ -180,11 +195,15 @@ def main():
 
                 filename = f"qwen_{uuid.uuid4().hex[:8]}.png"
                 output_path = os.path.join(args.output_dir, filename)
-                generator = torch.Generator().manual_seed(args.seed + batch_index)
+                if args.static_seed.lower() == "true":
+                    current_seed = 42
+                else:
+                    current_seed = args.seed + batch_index
+                generator = torch.Generator().manual_seed(current_seed)
 
                 print(f"Generating: {prompt[:60]}...", file=sys.stderr)
                 print(
-                    f"  Size: {args.width}x{args.height}, Steps: {args.steps}, CFG Scale: {args.guidance_scale}, Seed: {args.seed + batch_index}",
+                    f"  Size: {args.width}x{args.height}, Steps: {args.steps}, CFG Scale: {args.guidance_scale}, Seed: {current_seed}",
                     file=sys.stderr,
                 )
                 gen_start = time.time()
@@ -198,7 +217,6 @@ def main():
                     num_inference_steps=args.steps,
                     true_cfg_scale=args.guidance_scale,
                     generator=generator,
-                    num_images_per_prompt=args.num_images,
                 )
 
                 image = result.images[0]
