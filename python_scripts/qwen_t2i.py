@@ -39,33 +39,45 @@ def load_pipeline(args):
 
     print(f"Loading Qwen-t2i model: {args.model}", file=sys.stderr, flush=True)
 
-    # Parse device IDs
+    # Parse device IDs - FIXED VERSION
     device_ids = []
     if args.device_id and args.device_id.strip():
-        if args.device_id == "auto":
+        device_str = args.device_id.strip()
+
+        if device_str == "auto":
             # Auto-detect all available GPUs
             if torch.cuda.is_available():
                 device_ids = list(range(torch.cuda.device_count()))
                 print(
-                    f"✓ Auto-detected {len(device_ids)} GPU(s)",
+                    f"✓ Auto-detected {len(device_ids)} GPU(s): {device_ids}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+            else:
+                print(
+                    "⚠ No CUDA devices available for auto-detection",
                     file=sys.stderr,
                     flush=True,
                 )
         else:
-            for dev_id in args.device_id.split(","):
+            # Parse comma-separated device IDs
+            for dev_id in device_str.split(","):
                 dev_id = dev_id.strip()
-                if dev_id.startswith("cuda:"):
-                    device_ids.append(int(dev_id.split(":")[1]))
-                elif dev_id.isdigit():
-                    device_ids.append(int(dev_id))
-    elif args.device_id == "auto" or (not args.device_id and torch.cuda.is_available()):
-        # Auto-detect all available GPUs
-        device_ids = list(range(torch.cuda.device_count()))
-        print(
-            f"✓ Auto-detected {len(device_ids)} GPU(s): {device_ids}",
-            file=sys.stderr,
-            flush=True,
-        )
+                try:
+                    # Handle both "cuda:0" and "0" formats
+                    if ":" in dev_id:
+                        # Get the number after the colon
+                        num_part = dev_id.split(":")[-1]
+                        device_id = int(num_part)
+                    else:
+                        device_id = int(dev_id)
+
+                    device_ids.append(device_id)
+                except (ValueError, IndexError):
+                    print(f"⚠ Invalid device ID: {dev_id}", file=sys.stderr, flush=True)
+
+    print(f"DEBUG: Using device IDs: {device_ids}", file=sys.stderr, flush=True)
+
     start = time.time()
     # Force simple progress bars for downloads
     os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "true"
@@ -108,7 +120,6 @@ def load_pipeline(args):
         # If already using CPU offload for multi-GPU, don't enable again
         if len(device_ids) <= 1:
             pipe.enable_model_cpu_offload()
-        pipe.enable_attention_slicing("auto")
         pipe.enable_vae_slicing()
         pipe.enable_vae_tiling()
         print("✓ Low VRAM mode enabled", file=sys.stderr, flush=True)
@@ -118,17 +129,6 @@ def load_pipeline(args):
             print("✓ Full GPU mode", file=sys.stderr, flush=True)
         else:
             print("✓ CPU mode", file=sys.stderr, flush=True)
-
-    # Try to enable xformers for memory efficiency
-    try:
-        pipe.enable_xformers_memory_efficient_attention()
-        print("✓ xformers enabled", file=sys.stderr, flush=True)
-    except Exception:
-        print(
-            "⚠ xformers not available, using default attention",
-            file=sys.stderr,
-            flush=True,
-        )
 
     if args.lora_file:
         print(f"Loading LoRA: {args.lora_file}", file=sys.stderr, flush=True)
@@ -284,7 +284,13 @@ def main():
         print(json.dumps({"all_status": "success", "generations": all_results}))
 
     except Exception as e:
-        print(json.dumps({"status": "error", "error": str(e)}))
+        import traceback
+
+        error_details = traceback.format_exc()
+        print(f"FULL ERROR TRACEBACK:\n{error_details}", file=sys.stderr, flush=True)
+        print(
+            json.dumps({"status": "error", "error": str(e), "traceback": error_details})
+        )
         sys.exit(1)
 
 
