@@ -161,19 +161,32 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		}
 
 		// Generate unique filename for lora file
-		loraFilename := fmt.Sprintf("lora_%d%s", time.Now().Unix(), filepath.Ext(req.LoraURL))
-		if strings.Contains(loraFilename, "?") {
-			loraFilename = strings.Split(loraFilename, "?")[0]
+		// Extract filename from URL (remove query parameters and get basename)
+		cleanURL := req.LoraURL
+		if strings.Contains(cleanURL, "?") {
+			cleanURL = strings.Split(cleanURL, "?")[0]
 		}
-		loraFilePath = filepath.Join(loraDir, loraFilename)
+		loraFilename := filepath.Base(cleanURL)
+		// If filename is empty or weird, fallback to a safe name
+		if loraFilename == "" || loraFilename == "." || loraFilename == "/" {
+			loraFilename = fmt.Sprintf("lora_%d.safetensors", time.Now().Unix())
+		}
 
-		// Download the lora file
-		if err := download.DownloadFile(req.LoraURL, loraFilePath); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to download LoRA file: " + err.Error(),
-			})
+		loraFilePath = filepath.Join(loraDir, loraFilename)
+		// Check if file already exists
+		if _, err := os.Stat(loraFilePath); os.IsNotExist(err) {
+
+			// Download the lora file
+			if err := download.DownloadFile(req.LoraURL, loraFilePath); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "Failed to download LoRA file: " + err.Error(),
+				})
+			}
+			fmt.Printf("✓ LoRA file downloaded to: %s\n", loraFilePath)
+		} else {
+			fmt.Printf("✓ LoRA file already exists at: %s (skipping download)\n", loraFilePath)
 		}
-		fmt.Printf("✓ LoRA file downloaded to: %s\n", loraFilePath)
+
 	}
 
 	// Prepare prompts JSON for Python script
@@ -187,7 +200,6 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 	args := []string{
 		"python3", "python_scripts/qwen_t2i.py",
 		"--model", req.QwenModel,
-		"--negative-prompt", req.NegativePrompt,
 		"--width", fmt.Sprintf("%d", width),
 		"--height", fmt.Sprintf("%d", height),
 		"--steps", fmt.Sprintf("%d", req.Steps),
@@ -198,6 +210,11 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		"--prompts", string(promptsJSON),
 		"--low-vram", strconv.FormatBool(req.LowVRAM),
 	}
+
+	if req.NegativePrompt != "" {
+		args = append(args, "--negative-prompt", req.NegativePrompt)
+	}
+
 	// Add LoRA arguments if enabled
 	if req.LoraEnabled && loraFilePath != "" {
 		args = append(args, "--lora-file", loraFilePath)
