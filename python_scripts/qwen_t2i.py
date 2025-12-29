@@ -39,6 +39,33 @@ def load_pipeline(args):
 
     print(f"Loading Qwen-t2i model: {args.model}", file=sys.stderr, flush=True)
 
+    # Parse device IDs
+    device_ids = []
+    if args.device_id and args.device_id.strip():
+        if args.device_id == "auto":
+            # Auto-detect all available GPUs
+            if torch.cuda.is_available():
+                device_ids = list(range(torch.cuda.device_count()))
+                print(
+                    f"✓ Auto-detected {len(device_ids)} GPU(s)",
+                    file=sys.stderr,
+                    flush=True,
+                )
+        else:
+            for dev_id in args.device_id.split(","):
+                dev_id = dev_id.strip()
+                if dev_id.startswith("cuda:"):
+                    device_ids.append(int(dev_id.split(":")[1]))
+                elif dev_id.isdigit():
+                    device_ids.append(int(dev_id))
+    elif args.device_id == "auto" or (not args.device_id and torch.cuda.is_available()):
+        # Auto-detect all available GPUs
+        device_ids = list(range(torch.cuda.device_count()))
+        print(
+            f"✓ Auto-detected {len(device_ids)} GPU(s): {device_ids}",
+            file=sys.stderr,
+            flush=True,
+        )
     start = time.time()
     # Force simple progress bars for downloads
     os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "true"
@@ -48,6 +75,7 @@ def load_pipeline(args):
     logging.basicConfig(level=logging.INFO)
 
     diffusers_logging.set_verbosity_error()
+    # Determine device configuration
     if torch.cuda.is_available():
         torch_dtype = torch.bfloat16
         device = "cuda"
@@ -55,26 +83,37 @@ def load_pipeline(args):
         torch_dtype = torch.float32
         device = "cpu"
 
-    # Load Qwen-Image-Edit pipeline
-    # Note: Qwen-Image-Edit uses a different pipeline structure
-    # We'll use AutoPipelineForImage2Image which should work with Qwen models
+    # Load Qwen-Image pipeline
     pipe = DiffusionPipeline.from_pretrained(
         args.model,
         torch_dtype=torch_dtype,
     )
-    pipe = pipe.to(device)
+    # SIMPLE MULTI-GPU: Use CPU offload for multiple GPUs
+    if len(device_ids) > 1:
+        print(
+            f"✓ Using {len(device_ids)} GPUs with CPU offload",
+            file=sys.stderr,
+            flush=True,
+        )
+        pipe.enable_model_cpu_offload()
+        pipe.enable_sequential_cpu_offload()
+    else:
+        pipe = pipe.to(device)
+
     pipe.set_progress_bar_config(disable=None)
-    print(f"✓ Loaded Qwen-Image-Edit model: {args.model}", file=sys.stderr, flush=True)
+    print(f"✓ Loaded Qwen-Image model: {args.model}", file=sys.stderr, flush=True)
 
     # Memory optimizations
     if args.low_vram == "true":
-        pipe.enable_model_cpu_offload()
+        # If already using CPU offload for multi-GPU, don't enable again
+        if len(device_ids) <= 1:
+            pipe.enable_model_cpu_offload()
         pipe.enable_attention_slicing("auto")
         pipe.enable_vae_slicing()
         pipe.enable_vae_tiling()
         print("✓ Low VRAM mode enabled", file=sys.stderr, flush=True)
     else:
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() and len(device_ids) <= 1:
             pipe.to("cuda")
             print("✓ Full GPU mode", file=sys.stderr, flush=True)
         else:
@@ -179,6 +218,12 @@ def main():
         type=str,
         default="false",
         help="Always use seed 42 (Qwen default) if true",
+    )
+    parser.add_argument(
+        "--device-id",
+        type=str,
+        default="0",
+        help="GPU device ID(s) to use (e.g., '0', '0,1', 'cuda:0,cuda:1')",
     )
 
     args = parser.parse_args()

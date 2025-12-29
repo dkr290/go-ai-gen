@@ -72,6 +72,7 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		LoraAdapterName string  `form:"lora_adapter_name"`
 		HFToken         string  `form:"hf_token"` // Add this field
 		StaticSeed      string  `form:"static_seed"`
+		GPUDevices      string  `form:"gpu_devices"` // Add this field
 	}
 
 	req := new(QwenT2IRequest)
@@ -210,6 +211,15 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		"--num-images", fmt.Sprintf("%d", req.BatchSize),
 		"--prompts", string(promptsJSON),
 		"--low-vram", strconv.FormatBool(req.LowVRAM),
+	}
+	// Add GPU devices parameter
+	if req.GPUDevices != "" {
+		if req.GPUDevices == "auto" {
+			// Pass "auto" to let Python script handle auto-detection
+			args = append(args, "--device-id", "auto")
+		} else {
+			args = append(args, "--device-id", req.GPUDevices)
+		}
 	}
 
 	if req.NegativePrompt != "" {

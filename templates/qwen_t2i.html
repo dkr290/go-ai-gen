@@ -206,6 +206,19 @@
               </select>
             </div>
           </div>
+          <div class="col-md-6 mb-3">
+            <label for="gpu_devices" class="form-label">GPU Devices</label>
+            <select class="form-select" id="gpu_devices" name="gpu_devices">
+              <option value="0" selected>GPU 0 (Single)</option>
+              <option value="0,1">GPU 0 & 1 (Dual)</option>
+              <option value="0,1,2">GPU 0, 1 & 2 (Triple)</option>
+              <option value="0,1,2,3">All 4 GPUs</option>
+              <option value="auto">Auto-detect</option>
+            </select>
+            <div class="form-text">
+              Select GPUs for parallel processing. Requires sufficient VRAM.
+            </div>
+          </div>
 
           <div class="mb-3">
             <label for="negative_prompt" class="form-label"
