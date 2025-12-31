@@ -226,7 +226,6 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 	// Call Python script
 	args := []string{
 		"python3", "python_scripts/qwen_t2i.py",
-		"--model", req.QwenModel,
 		"--width", fmt.Sprintf("%d", width),
 		"--height", fmt.Sprintf("%d", height),
 		"--steps", fmt.Sprintf("%d", req.Steps),
@@ -243,6 +242,7 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		args[1] = "python_scripts/qwen_t2i_gguf.py"
 		// Remove model argument and add GGUF arguments
 		args = append(args, "--gguf-file", ggufFilePath)
+		args = append(args, "--model", req.QwenModel)
 	} else {
 		// Keep original model argument
 		args = append(args, "--model", req.QwenModel)
