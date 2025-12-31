@@ -239,7 +239,9 @@ def main():
 
                 filename = prompt["filename"]
                 pr = prompt["prompt"]
-                output_path = os.path.join(args.output_dir, filename)
+                name_without_ext, ext = os.path.splitext(filename)
+                batch_filename = f"{name_without_ext}_{batch_index}{ext}"
+                output_path = os.path.join(args.output_dir, batch_filename)
                 if args.static_seed.lower() == "true":
                     current_seed = 42
                 else:
