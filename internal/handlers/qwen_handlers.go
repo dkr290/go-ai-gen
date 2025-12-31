@@ -36,7 +36,11 @@ type QwenT2IRequest struct {
 	LoraAdapterName string  `form:"lora_adapter_name"`
 	HFToken         string  `form:"hf_token"` // Add this field
 	StaticSeed      string  `form:"static_seed"`
-	GPUDevices      string  `form:"gpu_devices"` // Add this field
+	GPUDevices      string  `form:"gpu_devices"`       // Add this field
+	GGUFEnabled     bool    `form:"gguf_enabled"`      // Add this field
+	GGUFURL         string  `form:"gguf_url"`          // Add this field
+	GGUFNGLayers    int     `form:"gguf_n_gpu_layers"` // Add this field
+	GGUFNThreads    int     `form:"gguf_n_threads"`    // Add this field
 }
 
 type PromptData struct {
@@ -175,6 +179,43 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 
 	}
 
+	ggufFilePath := ""
+	if req.GGUFEnabled && req.GGUFURL != "" {
+		// Create gguf directory if it doesn't exist
+		ggufDir := filepath.Join("downloads", "gguf")
+		if err := os.MkdirAll(ggufDir, 0o755); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to create GGUF directory: " + err.Error(),
+			})
+		}
+
+		// Generate unique filename for gguf file
+		cleanURL := req.GGUFURL
+		if strings.Contains(cleanURL, "?") {
+			cleanURL = strings.Split(cleanURL, "?")[0]
+		}
+		ggufFilename := filepath.Base(cleanURL)
+		// If filename is empty or weird, fallback to a safe name
+		if ggufFilename == "" || ggufFilename == "." || ggufFilename == "/" {
+			ggufFilename = fmt.Sprintf("qwen_gguf_%d.gguf", time.Now().Unix())
+		}
+
+		ggufFilePath = filepath.Join(ggufDir, ggufFilename)
+		// Check if file already exists
+		if _, err := os.Stat(ggufFilePath); os.IsNotExist(err) {
+
+			// Download the gguf file
+			if err := download.DownloadFile(req.GGUFURL, ggufFilePath); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "Failed to download GGUF file: " + err.Error(),
+				})
+			}
+			fmt.Printf("✓ GGUF file downloaded to: %s\n", ggufFilePath)
+		} else {
+			fmt.Printf("✓ GGUF file already exists at: %s (skipping download)\n", ggufFilePath)
+		}
+	}
+
 	// Prepare prompts JSON for Python script
 	promptsJSON, err := json.Marshal(promptsData)
 	if err != nil {
@@ -196,6 +237,20 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		"--prompts", string(promptsJSON),
 		"--low-vram", strconv.FormatBool(req.LowVRAM),
 	}
+
+	// If GGUF is enabled, use the GGUF script instead
+	if req.GGUFEnabled && ggufFilePath != "" {
+		args[1] = "python_scripts/qwen_t2i_gguf.py"
+		// Remove model argument and add GGUF arguments
+		args = append(args[:2], args[4:]...) // Remove --model and its value
+		args = append(args, "--gguf-file", ggufFilePath)
+		args = append(args, "--n-gpu-layers", fmt.Sprintf("%d", req.GGUFNGLayers))
+		args = append(args, "--n-threads", fmt.Sprintf("%d", req.GGUFNThreads))
+	} else {
+		// Keep original model argument
+		args = append(args, "--model", req.QwenModel)
+	}
+
 	// Add GPU devices parameter
 	if req.GPUDevices != "" {
 		if req.GPUDevices == "auto" {
@@ -222,6 +277,7 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 			args = append(args, "--lora-adapter-name", "lora")
 		}
 	}
+
 	cmd := exec.Command(args[0], args[1:]...)
 
 	if req.HFToken != "" {

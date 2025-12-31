@@ -60,7 +60,9 @@
                 <option value="Qwen/Qwen-Image" selected>
                   Qwen/Qwen-Image
                 </option>
-                <option value="qwen2.5-vl">Qwen2.5-VL</option>
+                <option value="Qwen/Qwen-Image-2512">
+                  Qwen/Qwen-Image-2512
+                </option>
                 <option value="qwen-vl">Qwen-VL</option>
               </select>
             </div>
@@ -334,6 +336,80 @@
               </div>
             </div>
           </div>
+          <!-- GGUF Section -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="gguf_enabled"
+                  name="gguf_enabled"
+                  value="true"
+                  onchange="toggleGGUFFields()"
+                />
+                <label class="form-check-label" for="gguf_enabled">
+                  <strong>Enable GGUF Model</strong>
+                </label>
+              </div>
+            </div>
+            <div class="card-body" id="gguf_fields" style="display: none">
+              <div class="mb-3">
+                <label for="gguf_url" class="form-label">GGUF File URL</label>
+                <input
+                  type="url"
+                  class="form-control"
+                  id="gguf_url"
+                  name="gguf_url"
+                  placeholder="https://huggingface.co/unsloth/Qwen-Image-2512-GGUF/resolve/main/Qwen-Image-2512-Q4_K_M.gguf"
+                  disabled
+                />
+                <div class="form-text">
+                  URL to download GGUF model file (.gguf format). When enabled,
+                  the Qwen Model dropdown will be disabled.
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="gguf_n_gpu_layers" class="form-label"
+                  >GPU Layers</label
+                >
+                <input
+                  type="number"
+                  class="form-control"
+                  id="gguf_n_gpu_layers"
+                  name="gguf_n_gpu_layers"
+                  placeholder="-1 for all layers"
+                  value="-1"
+                  min="-1"
+                  max="1000"
+                  disabled
+                />
+                <div class="form-text">
+                  Number of layers to offload to GPU (-1 = all layers, 0 = CPU
+                  only)
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="gguf_n_threads" class="form-label"
+                  >CPU Threads</label
+                >
+                <input
+                  type="number"
+                  class="form-control"
+                  id="gguf_n_threads"
+                  name="gguf_n_threads"
+                  placeholder="0 for auto"
+                  value="0"
+                  min="0"
+                  max="64"
+                  disabled
+                />
+                <div class="form-text">
+                  Number of CPU threads to use (0 = auto-detect)
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- LoRA Section -->
           <div class="card mb-3">
@@ -459,6 +535,7 @@
   document.getElementById("guidance").addEventListener("input", function () {
     document.getElementById("guidance_value").textContent = this.value;
   });
+
   // Toggle LoRA fields
   function toggleLoraFields() {
     const loraEnabled = document.getElementById("lora_enabled").checked;
@@ -478,10 +555,41 @@
       loraUrl.required = false;
     }
   }
+  function toggleGGUFFields() {
+    const ggufEnabled = document.getElementById("gguf_enabled").checked;
+    const ggufFields = document.getElementById("gguf_fields");
+    const ggufUrl = document.getElementById("gguf_url");
+    const ggufGpuLayers = document.getElementById("gguf_n_gpu_layers");
+    const ggufThreads = document.getElementById("gguf_n_threads");
+    const modelSelect = document.getElementById("qwen_model");
+
+    if (ggufEnabled) {
+      ggufFields.style.display = "block";
+      ggufUrl.disabled = false;
+      ggufGpuLayers.disabled = false;
+      ggufThreads.disabled = false;
+      ggufUrl.required = true;
+
+      // Disable normal model selection
+      modelSelect.disabled = true;
+      modelSelect.required = false;
+    } else {
+      ggufFields.style.display = "none";
+      ggufUrl.disabled = true;
+      ggufGpuLayers.disabled = true;
+      ggufThreads.disabled = true;
+      ggufUrl.required = false;
+
+      // Re-enable normal model selection
+      modelSelect.disabled = false;
+      modelSelect.required = true;
+    }
+  }
 
   // Initialize on page load
   document.addEventListener("DOMContentLoaded", function () {
     toggleLoraFields();
+    toggleGGUFFields();
     // Set initial result message
     document.getElementById("result").innerHTML = `
       <div class="text-center text-muted py-5">
@@ -503,6 +611,7 @@
             </div>
         `;
     toggleLoraFields();
+    toggleGGUFFields();
     // Hide progress bar on reset
     document.getElementById("progressContainer").style.display = "none";
     document.getElementById("generateBtn").disabled = false;

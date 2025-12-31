@@ -246,7 +246,7 @@ def main():
                     current_seed = args.seed + batch_index
                 generator = torch.Generator().manual_seed(current_seed)
 
-                print(f"Generating: {prompt[:60]}...", file=sys.stderr)
+                print(f"Generating: {pr[:60]}...", file=sys.stderr)
                 print(
                     f" Size: {args.width}x{args.height}, Steps: {args.steps}",
                     f" CFG Scale: {args.guidance_scale}, Seed: {current_seed}",
