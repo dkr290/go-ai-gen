@@ -529,18 +529,10 @@
       ggufFields.style.display = "block";
       ggufUrl.disabled = false;
       ggufUrl.required = true;
-
-      // Disable normal model selection
-      modelSelect.disabled = true;
-      modelSelect.required = false;
     } else {
       ggufFields.style.display = "none";
       ggufUrl.disabled = true;
       ggufUrl.required = false;
-
-      // Re-enable normal model selection
-      modelSelect.disabled = false;
-      modelSelect.required = true;
     }
   }
 
