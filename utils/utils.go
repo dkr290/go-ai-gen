@@ -11,7 +11,75 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-// Add this helper function
+var cameraFormat = map[string]string{
+	// Subject-focused (use "of")
+	"extreme close-up":       "of",
+	"close-up shot":          "of",
+	"medium close-up":        "of",
+	"medium shot":            "of",
+	"medium full shot":       "of",
+	"full shot":              "of",
+	"detail shot":            "of",
+	"insert shot":            "of",
+	"macro shot":             "of",
+	"profile shot":           "of",
+	"front shot":             "of",
+	"side shot":              "of",
+	"rear shot":              "of",
+	"three-quarter view":     "of",
+	"intimate portrait shot": "of",
+	"cinematic close-up":     "of",
+
+	// Environment-focused (use "showing")
+	"wide angle shot":        "showing",
+	"ultra wide angle":       "showing",
+	"long shot":              "showing",
+	"extreme long shot":      "showing",
+	"establishing shot":      "showing",
+	"epic establishing shot": "showing",
+	"wide cinematic shot":    "showing",
+	"bird's eye view":        "showing",
+	"worm's eye view":        "showing",
+	"overhead shot":          "showing",
+	"top-down shot":          "showing",
+	"bottom-up shot":         "showing",
+	"environmental portrait": "showing",
+
+	// Angle / stylistic (comma separation)
+	"dutch angle":                  ",",
+	"tilted angle":                 ",",
+	"cinematic shot":               ",",
+	"dynamic shot":                 ",",
+	"dramatic shot":                ",",
+	"moody shot":                   ",",
+	"minimalist shot":              ",",
+	"action shot":                  ",",
+	"medium shot from a low angle": ",",
+
+	// POV (special prefix)
+	"point of view":     "POV",
+	"first-person view": "POV",
+	"subjective camera": "POV",
+
+	// Neutral append
+	"eye-level shot":         " ",
+	"high angle shot":        " ",
+	"low angle shot":         " ",
+	"over-the-shoulder shot": " ",
+	"telephoto shot":         " ",
+	"fisheye lens":           " ",
+	"tilt-shift":             " ",
+	"shallow depth of field": " ",
+	"deep focus shot":        " ",
+	"rack focus":             " ",
+	"soft focus":             " ",
+	"sharp focus":            " ",
+	"bokeh background":       " ",
+	"motion blur":            " ",
+	"freeze frame":           " ",
+	"third-person view":      " ",
+}
+
 func ParseDimensions(dimStr string) (int, int, error) {
 	if dimStr == "" {
 		return 0, 0, fmt.Errorf("dimension string is empty")
@@ -60,20 +128,26 @@ func MapStylePreset(preset string) string {
 }
 
 func FormatCameraShot(cameraShot, prompt string) string {
-	switch cameraShot {
-	case "front shot", "close-up shot", "extreme close-up", "medium shot",
-		"full shot", "long shot", "low angle shot", "high angle shot":
-		return cameraShot + " of " + prompt
-	case "wide angle shot", "establishing shot", "overhead shot",
-		"bird's eye view", "worm's eye view":
-		return cameraShot + " showing " + prompt
-	case "dutch angle":
-		return prompt + ", " + cameraShot
-	case "point of view":
-		return "POV: " + prompt
-	default:
-		return cameraShot + " " + prompt
+	if cameraShot == "" {
+		return prompt
 	}
+
+	if mode, ok := cameraFormat[cameraShot]; ok {
+		switch mode {
+		case "of":
+			return cameraShot + " of " + prompt
+		case "showing":
+			return cameraShot + " showing " + prompt
+		case ",":
+			return cameraShot + ", " + prompt
+		case "POV":
+			return "POV: " + prompt
+		default:
+			return cameraShot + " " + prompt
+		}
+	}
+
+	return cameraShot + " " + prompt
 }
 
 func SetupLogger() logger.Config {
@@ -104,4 +178,50 @@ func SetupLogger() logger.Config {
 		TimeZone:   "Local",
 		Output:     os.Stdout,
 	}
+}
+
+// FormatFileSize  function to format file size
+func FormatFileSize(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+func SanitizeFilename(text string) string {
+	text = strings.ReplaceAll(text, "/", "-")
+	text = strings.ReplaceAll(text, " ", "-")
+	text = strings.ReplaceAll(text, ",", "")
+	return strings.ToLower(text)
+}
+
+func SanitizeFilenameForImage(prompt string, index int) string {
+	// Sanitize the prompt
+	sanitized := SanitizeFilename(prompt)
+
+	// Take first 10 characters (or less) for the prompt part
+	promptPart := sanitized
+	if len(promptPart) > 10 {
+		promptPart = promptPart[:10]
+	}
+
+	// Remove trailing dash if present
+	promptPart = strings.TrimSuffix(promptPart, "-")
+
+	// Format: {index}_{prompt10}.png
+	// Max: 2 + 1 + 10 + 4 = 17 chars (well under 20)
+
+	return fmt.Sprintf("%02d_%s.png", index, promptPart)
+}
+
+func GetFilenameFromURL(url string) string {
+	// Extract the last part of the URL
+	parts := strings.Split(url, "/")
+	return parts[len(parts)-1]
 }

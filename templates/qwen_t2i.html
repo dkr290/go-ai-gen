@@ -10,7 +10,7 @@
 </div>
 
 <div class="row mt-4">
-  <div class="col-md-8">
+  <div class="col-md-12">
     <div class="card">
       <div class="card-header">
         <h5 class="mb-0">Generation Parameters</h5>
@@ -20,6 +20,7 @@
           hx-post="/api/qwen-t2i"
           hx-target="#result"
           hx-indicator="#loading"
+          hx-timeout="0"
         >
           <div class="mb-3">
             <label for="prompt" class="form-label">Prompt</label>
@@ -150,21 +151,94 @@
             <label for="camera_shot" class="form-label">Camera Shot Type</label>
             <select class="form-select" id="camera_shot" name="camera_shot">
               <option value="">No specific shot (default)</option>
-              <option value="front shot">Front Shot</option>
-              <option value="wide angle shot">Wide Angle Shot</option>
-              <option value="close-up shot">Close-up Shot</option>
-              <option value="extreme close-up">Extreme Close-up</option>
+              <!-- Distance / Framing -->
+              <option value="extreme close-up">Extreme Close-Up</option>
+              <option value="close-up shot">Close-Up Shot</option>
+              <option value="medium close-up">Medium Close-Up</option>
               <option value="medium shot">Medium Shot</option>
+              <option value="medium full shot">Medium Full Shot</option>
               <option value="full shot">Full Shot</option>
               <option value="long shot">Long Shot</option>
+              <option value="extreme long shot">Extreme Long Shot</option>
               <option value="establishing shot">Establishing Shot</option>
               <option value="overhead shot">Overhead Shot</option>
-              <option value="low angle shot">Low Angle Shot</option>
+              <option value="medium shot from a low angle">
+                Medium Shot from a low angle
+              </option>
+
+              <!-- Angle / Perspective -->
+              <option value="eye-level shot">Eye-Level Shot</option>
               <option value="high angle shot">High Angle Shot</option>
-              <option value="dutch angle">Dutch Angle</option>
-              <option value="point of view">Point of View (POV)</option>
+              <option value="low angle shot">Low Angle Shot</option>
               <option value="bird's eye view">Bird's Eye View</option>
               <option value="worm's eye view">Worm's Eye View</option>
+              <option value="overhead shot">Overhead Shot</option>
+              <option value="top-down shot">Top-Down Shot</option>
+              <option value="bottom-up shot">Bottom-Up Shot</option>
+              <option value="dutch angle">Dutch Angle</option>
+              <option value="tilted angle">Tilted Angle</option>
+
+              <!-- Orientation / Direction -->
+              <option value="front shot">Front Shot</option>
+              <option value="side shot">Side Shot</option>
+              <option value="rear shot">Rear Shot</option>
+              <option value="three-quarter view">Three-Quarter View</option>
+              <option value="profile shot">Profile Shot</option>
+              <option value="over-the-shoulder shot">
+                Over-the-Shoulder Shot
+              </option>
+
+              <!-- POV -->
+              <option value="point of view">Point of View (POV)</option>
+              <option value="first-person view">First-Person View</option>
+              <option value="third-person view">Third-Person View</option>
+              <option value="subjective camera">Subjective Camera</option>
+
+              <!-- Lens / Optical -->
+              <option value="wide angle shot">Wide-Angle Shot</option>
+              <option value="ultra wide angle">Ultra-Wide Angle</option>
+              <option value="fisheye lens">Fisheye Lens</option>
+              <option value="telephoto shot">Telephoto Shot</option>
+              <option value="macro shot">Macro Shot</option>
+              <option value="tilt-shift">Tilt-Shift</option>
+
+              <!-- Focus / Depth -->
+              <option value="shallow depth of field">
+                Shallow Depth of Field
+              </option>
+              <option value="deep focus shot">Deep Focus Shot</option>
+              <option value="rack focus">Rack Focus</option>
+              <option value="soft focus">Soft Focus</option>
+              <option value="sharp focus">Sharp Focus</option>
+              <option value="bokeh background">Bokeh Background</option>
+
+              <!-- Motion / Style -->
+              <option value="cinematic shot">Cinematic Shot</option>
+              <option value="dynamic shot">Dynamic Shot</option>
+              <option value="action shot">Action Shot</option>
+              <option value="motion blur">Motion Blur</option>
+              <option value="freeze frame">Freeze Frame</option>
+
+              <!-- Detail / Mood -->
+              <option value="detail shot">Detail Shot</option>
+              <option value="insert shot">Insert Shot</option>
+              <option value="atmospheric shot">Atmospheric Shot</option>
+              <option value="moody shot">Moody Shot</option>
+              <option value="dramatic shot">Dramatic Shot</option>
+              <option value="minimalist shot">Minimalist Shot</option>
+
+              <!-- AI-Friendly Presets -->
+              <option value="cinematic close-up">Cinematic Close-Up</option>
+              <option value="wide cinematic shot">Wide Cinematic Shot</option>
+              <option value="epic establishing shot">
+                Epic Establishing Shot
+              </option>
+              <option value="environmental portrait">
+                Environmental Portrait
+              </option>
+              <option value="intimate portrait shot">
+                Intimate Portrait Shot
+              </option>
             </select>
             <div class="form-text">
               Optional: Choose a camera shot type to control composition
@@ -321,68 +395,62 @@
             >
               <i class="bi bi-arrow-clockwise me-1"></i>Reset
             </button>
-            <button type="submit" class="btn btn-danger">
+            <button type="submit" class="btn btn-danger" id="submit">
               <i class="bi bi-robot me-1"></i>Generate Images
             </button>
+          </div>
+
+          <!-- Progress bar container at the bottom -->
+          <div id="progressContainer" class="mt-4" style="display: none">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-muted small">Generation in progress...</span>
+              <span class="text-muted small" id="progressTime">0s</span>
+            </div>
+            <div class="progress" style="height: 8px">
+              <div
+                id="progressBar"
+                class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                role="progressbar"
+                style="width: 0%"
+              ></div>
+            </div>
+            <div class="text-center mt-2">
+              <small class="text-muted" id="progressStatus"
+                >Initializing...</small
+              >
+            </div>
           </div>
         </form>
       </div>
     </div>
   </div>
+</div>
 
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-header">
-        <h5 class="mb-0">Results</h5>
-      </div>
-      <div class="card-body">
-        <div id="loading" class="text-center" style="display: none">
-          <div class="spinner-border text-danger" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-          <p class="mt-3 fs-5">Generating images...</p>
-          <div class="progress mt-3" style="height: 10px">
-            <div
-              class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
-              style="width: 100%"
-            ></div>
-          </div>
-        </div>
-        <div id="result">
-          <div class="text-center text-muted">
-            <i class="bi bi-robot display-1"></i>
-            <p class="mt-2">Your generated images will appear here</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mt-4">
-      <div class="card-header">
-        <h5 class="mb-0">Model Info</h5>
-      </div>
-      <div class="card-body">
-        <p>
-          <strong>Qwen</strong> is a multimodal AI model with advanced
-          text-to-image capabilities, understanding complex prompts and
-          generating high-quality images.
-        </p>
-        <ul class="list-unstyled">
-          <li>
-            <i class="bi bi-check-circle text-success me-2"></i>Multimodal
-            understanding
-          </li>
-          <li>
-            <i class="bi bi-check-circle text-success me-2"></i>Complex prompt
-            handling
-          </li>
-          <li>
-            <i class="bi bi-check-circle text-success me-2"></i>Multiple style
-            options
-          </li>
-        </ul>
-      </div>
-    </div>
+<div id="result" class="mt-4"></div>
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0">Model Info</h5>
+  </div>
+  <div class="card-body">
+    <p>
+      <strong>Qwen</strong> is a multimodal AI model with advanced text-to-image
+      capabilities, understanding complex prompts and generating high-quality
+      images.
+    </p>
+    <ul class="list-unstyled">
+      <li>
+        <i class="bi bi-check-circle text-success me-2"></i>Multimodal
+        understanding
+      </li>
+      <li>
+        <i class="bi bi-check-circle text-success me-2"></i>Complex prompt
+        handling
+      </li>
+      <li>
+        <i class="bi bi-check-circle text-success me-2"></i>Multiple style
+        options
+      </li>
+    </ul>
   </div>
 </div>
 
@@ -412,38 +480,136 @@
   }
 
   // Initialize on page load
-  document.addEventListener("DOMContentLoaded", toggleLoraFields);
+  document.addEventListener("DOMContentLoaded", function () {
+    toggleLoraFields();
+    // Set initial result message
+    document.getElementById("result").innerHTML = `
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-robot display-1"></i>
+        <p class="mt-2">Submit the form to generate images</p>
+        <p class="small">Generated images will be saved to downloads/generated directory</p>
+      </div>
+    `;
+  });
 
   function resetForm() {
     document.querySelector("form").reset();
     document.getElementById("guidance_value").textContent = "4.0";
     document.getElementById("result").innerHTML = `
-            <div class="text-center text-muted">
+            <div class="text-center text-muted py-5">
                 <i class="bi bi-robot display-1"></i>
-                <p class="mt-2">Your generated images will appear here</p>
+                <p class="mt-2">Submit the form to generate images</p>
+                <p class="small">Generated images will be saved to downloads/generated directory</p>
             </div>
         `;
     toggleLoraFields();
+    // Hide progress bar on reset
+    document.getElementById("progressContainer").style.display = "none";
+    document.getElementById("generateBtn").disabled = false;
+    document.getElementById("generateBtn").innerHTML =
+      '<i class="bi bi-robot me-1"></i>Generate Images';
   }
+
+  // Variables for progress tracking
+  let progressInterval;
+  let startTime;
+  let progressWidth = 0;
+  let isAnimating = false;
+  function startProgressAnimation() {
+    if (isAnimating) return;
+    isAnimating = true;
+    startTime = Date.now();
+    progressWidth = 0;
+    // Show progress container
+    const progressContainer = document.getElementById("progressContainer");
+    const progressBar = document.getElementById("progressBar");
+    const progressTime = document.getElementById("progressTime");
+    const progressStatus = document.getElementById("progressStatus");
+    progressContainer.style.display = "block";
+    progressBar.style.width = "0%";
+    progressStatus.textContent = "Initializing model...";
+    // Update timer
+    progressInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      progressTime.textContent = `${elapsed}s`;
+      // Animate progress bar (oscillating between 20% and 80% to show activity)
+      progressWidth = 20 + (Math.sin(Date.now() / 2000) * 30 + 30);
+      progressBar.style.width = `${progressWidth}%`;
+      // Update status messages based on time
+      if (elapsed < 10) {
+        progressStatus.textContent =
+          "Loading model and preparing generation...";
+      } else if (elapsed < 30) {
+        progressStatus.textContent =
+          "Generating images... This may take a while.";
+      } else if (elapsed < 60) {
+        progressStatus.textContent =
+          "Still generating... Complex prompts take longer.";
+      } else {
+        progressStatus.textContent = "Processing... Generation is in progress.";
+      }
+    }, 100);
+  }
+  function stopProgressAnimation(success = true) {
+    if (!isAnimating) return;
+    clearInterval(progressInterval);
+    isAnimating = false;
+    const progressBar = document.getElementById("progressBar");
+    const progressStatus = document.getElementById("progressStatus");
+    const progressContainer = document.getElementById("progressContainer");
+    if (success) {
+      // Show completion animation
+      progressBar.style.width = "100%";
+      progressBar.classList.remove("progress-bar-animated");
+      progressBar.classList.remove("bg-danger");
+      progressBar.classList.add("bg-success");
+      progressStatus.textContent = "✓ Generation completed!";
+      // Hide progress bar after 3 seconds
+      setTimeout(() => {
+        progressContainer.style.display = "none";
+        progressBar.classList.remove("bg-success");
+        progressBar.classList.add("bg-danger");
+        progressBar.classList.add("progress-bar-animated");
+      }, 3000);
+    } else {
+      // Hide on error
+      progressContainer.style.display = "none";
+    }
+  }
+
   document.addEventListener("htmx:beforeRequest", function (event) {
     if (event.detail.target.id === "result") {
-      const submitBtn = event.detail.elt.querySelector('button[type="submit"]');
+      const submitBtn = document.getElementById("submit");
+
       if (submitBtn) {
         submitBtn.innerHTML =
           '<i class="bi bi-hourglass-split me-1"></i>Generating...';
         submitBtn.disabled = true;
-        submitBtn.classList.add("pulse-animation");
+        startProgressAnimation();
       }
     }
   });
 
   document.addEventListener("htmx:afterRequest", function (event) {
     if (event.detail.target.id === "result") {
-      const submitBtn = event.detail.elt.querySelector('button[type="submit"]');
+      const submitBtn = document.getElementById("submit");
       if (submitBtn) {
         submitBtn.innerHTML = '<i class="bi bi-robot me-1"></i>Generate Images';
         submitBtn.disabled = false;
-        submitBtn.classList.remove("pulse-animation");
+        // Stop progress animation (will be handled by afterSwap for success)
+        if (event.detail.xhr.status !== 200) {
+          stopProgressAnimation(false);
+        }
+      }
+    }
+  });
+  document.addEventListener("htmx:responseError", function (event) {
+    if (event.detail.target.id === "result") {
+      stopProgressAnimation(false);
+      const submitBtn = document.getElementById("submit");
+      if (submitBtn) {
+        submitBtn.innerHTML = '<i class="bi bi-robot me-1"></i>Generate Images';
+        submitBtn.disabled = false;
       }
     }
   });
@@ -455,27 +621,17 @@
         const data = JSON.parse(response);
         // Check for the correct response structure
         if (data.success === true && data.data && data.data.image_urls) {
-          let imagesHTML = '<div class="row">';
-          // Always show all images, regardless of count
-          data.data.image_urls.forEach(function (url, index) {
-            // Create a download link for each image
-            imagesHTML += `
-            <div class="col-md-6 mb-3">
-              <div class="card">
-                <img src="${url}" class="card-img-top" alt="Generated image ${index + 1}" style="max-height: 300px; object-fit: cover;">
-                <div class="card-body">
-                  <p class="card-text text-muted small">Image ${index + 1}</p>
-                    <a href="${url}" class="btn btn-sm btn-outline-primary" download>
-                      <i class="bi bi-download me-1"></i>Download
-                    </a>
-                </div>
-              </div>
+          stopProgressAnimation(true);
+          document.getElementById("result").innerHTML = `
+            <div class="alert alert-success">
+              <i class="bi bi-check-circle me-2"></i>
+              <strong>Success!</strong> Generated ${data.data.total_images} images.
+              <p class="mt-2 mb-0">Images have been saved to the downloads/generated directory.</p>
             </div>
           `;
-          });
-          imagesHTML += "</div>";
-          document.getElementById("result").innerHTML = imagesHTML;
         } else if (data.error) {
+          stopProgressAnimation(false);
+
           // Show error message
           document.getElementById("result").innerHTML = `
           <div class="alert alert-danger">
@@ -484,6 +640,8 @@
           </div>
         `;
         } else {
+          stopProgressAnimation(false);
+
           // Fallback for unexpected response
           document.getElementById("result").innerHTML = `
           <div class="alert alert-warning">
@@ -495,6 +653,8 @@
         }
       } catch (e) {
         console.error("Failed to parse response:", e);
+        stopProgressAnimation(false);
+
         document.getElementById("result").innerHTML = `
         <div class="alert alert-danger">
           <i class="bi bi-exclamation-triangle me-2"></i>

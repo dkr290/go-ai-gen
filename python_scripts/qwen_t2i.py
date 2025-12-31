@@ -4,7 +4,6 @@ import logging
 import os
 import sys
 import time
-import uuid
 
 import torch
 from diffusers import DiffusionPipeline
@@ -238,7 +237,8 @@ def main():
         for i, prompt in enumerate(prompts):
             for batch_index in range(args.num_images):
 
-                filename = f"qwen_{uuid.uuid4().hex[:8]}.png"
+                filename = prompt["filename"]
+                pr = prompt["prompt"]
                 output_path = os.path.join(args.output_dir, filename)
                 if args.static_seed.lower() == "true":
                     current_seed = 42
@@ -248,14 +248,15 @@ def main():
 
                 print(f"Generating: {prompt[:60]}...", file=sys.stderr)
                 print(
-                    f"  Size: {args.width}x{args.height}, Steps: {args.steps}, CFG Scale: {args.guidance_scale}, Seed: {current_seed}",
+                    f" Size: {args.width}x{args.height}, Steps: {args.steps}",
+                    f" CFG Scale: {args.guidance_scale}, Seed: {current_seed}",
                     file=sys.stderr,
                 )
                 gen_start = time.time()
 
                 # Qwen-Image specific parameters
                 result = pipe(
-                    prompt=prompt,
+                    prompt=pr,
                     negative_prompt=args.negative_prompt,
                     width=args.width,
                     height=args.height,

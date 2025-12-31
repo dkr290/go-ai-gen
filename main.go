@@ -39,6 +39,8 @@ func main() {
 	app.Post("/api/qwen-t2i", h.QwenT2IAPIHandler)
 	app.Get("/qwen-i2i-single", h.QwenI2ISingleHandler)
 	app.Get("/qwen-i2i-multi", h.QwenI2IMultiHandler)
+	app.Get("/file-server", h.FileServerHandler)
+	app.Get("/api/file-server/list", h.FileServerListHandler)
 
 	// Start server
 	port := os.Getenv("PORT")
