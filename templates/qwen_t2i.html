@@ -282,17 +282,20 @@
               </select>
             </div>
           </div>
-          <div class="col-md-6 mb-3">
-            <label for="gpu_devices" class="form-label">GPU Devices</label>
-            <select class="form-select" id="gpu_devices" name="gpu_devices">
-              <option value="0" selected>GPU 0 (Single)</option>
-              <option value="0,1">GPU 0 & 1 (Dual)</option>
-              <option value="0,1,2">GPU 0, 1 & 2 (Triple)</option>
-              <option value="0,1,2,3">All 4 GPUs</option>
-              <option value="auto">Auto-detect</option>
-            </select>
-            <div class="form-text">
-              Select GPUs for parallel processing. Requires sufficient VRAM.
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="gpu_devices" class="form-label">GPU Devices</label>
+              <select class="form-select" id="gpu_devices" name="gpu_devices">
+                <option value="0" selected>GPU 0 (Single)</option>
+                <option value="0,1">GPU 0 & 1 (Dual)</option>
+                <option value="0,1,2">GPU 0, 1 & 2 (Triple)</option>
+                <option value="0,1,2,3">All 4 GPUs</option>
+                <option value="auto">Auto-detect</option>
+              </select>
+              <div class="form-text">
+                Select GPUs for parallel processing. Requires sufficient VRAM.
+              </div>
             </div>
           </div>
 
@@ -367,45 +370,6 @@
                 <div class="form-text">
                   URL to download GGUF model file (.gguf format). When enabled,
                   the Qwen Model dropdown will be disabled.
-                </div>
-              </div>
-              <div class="mb-3">
-                <label for="gguf_n_gpu_layers" class="form-label"
-                  >GPU Layers</label
-                >
-                <input
-                  type="number"
-                  class="form-control"
-                  id="gguf_n_gpu_layers"
-                  name="gguf_n_gpu_layers"
-                  placeholder="-1 for all layers"
-                  value="-1"
-                  min="-1"
-                  max="1000"
-                  disabled
-                />
-                <div class="form-text">
-                  Number of layers to offload to GPU (-1 = all layers, 0 = CPU
-                  only)
-                </div>
-              </div>
-              <div class="mb-3">
-                <label for="gguf_n_threads" class="form-label"
-                  >CPU Threads</label
-                >
-                <input
-                  type="number"
-                  class="form-control"
-                  id="gguf_n_threads"
-                  name="gguf_n_threads"
-                  placeholder="0 for auto"
-                  value="0"
-                  min="0"
-                  max="64"
-                  disabled
-                />
-                <div class="form-text">
-                  Number of CPU threads to use (0 = auto-detect)
                 </div>
               </div>
             </div>
@@ -559,15 +523,11 @@
     const ggufEnabled = document.getElementById("gguf_enabled").checked;
     const ggufFields = document.getElementById("gguf_fields");
     const ggufUrl = document.getElementById("gguf_url");
-    const ggufGpuLayers = document.getElementById("gguf_n_gpu_layers");
-    const ggufThreads = document.getElementById("gguf_n_threads");
     const modelSelect = document.getElementById("qwen_model");
 
     if (ggufEnabled) {
       ggufFields.style.display = "block";
       ggufUrl.disabled = false;
-      ggufGpuLayers.disabled = false;
-      ggufThreads.disabled = false;
       ggufUrl.required = true;
 
       // Disable normal model selection
@@ -576,8 +536,6 @@
     } else {
       ggufFields.style.display = "none";
       ggufUrl.disabled = true;
-      ggufGpuLayers.disabled = true;
-      ggufThreads.disabled = true;
       ggufUrl.required = false;
 
       // Re-enable normal model selection
@@ -614,8 +572,8 @@
     toggleGGUFFields();
     // Hide progress bar on reset
     document.getElementById("progressContainer").style.display = "none";
-    document.getElementById("generateBtn").disabled = false;
-    document.getElementById("generateBtn").innerHTML =
+    document.getElementById("submit").disabled = false;
+    document.getElementById("submit").innerHTML =
       '<i class="bi bi-robot me-1"></i>Generate Images';
   }
 

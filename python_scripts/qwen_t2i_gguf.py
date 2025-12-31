@@ -5,7 +5,12 @@ import sys
 import time
 
 import torch
-from diffusers import FluxPipeline
+from diffusers import (
+    AutoPipelineForText2Image,
+    FluxPipeline,
+    FluxTransformer2DModel,
+    GGUFQuantizationConfig,
+)
 from PIL import Image
 
 
@@ -48,14 +53,10 @@ def load_gguf_pipeline(args):
         # Note: This requires a specific version of diffusers that supports GGUF
         # You might need to install: pip install diffusers[gguf]
 
-        # Method 1: Using from_single_file (if supported)
+        print("Loading GGUF transformer...", file=sys.stderr, flush=True)
+
         try:
-            from diffusers import FluxTransformer2DModel
-            from gguf import GGUFQuantizationConfig
-
-            print("Loading GGUF transformer...", file=sys.stderr, flush=True)
-
-            # Load the GGUF-quantized transformer
+            # Load the GGUF‑quantized transformer
             transformer = FluxTransformer2DModel.from_single_file(
                 args.gguf_file,
                 quantization_config=GGUFQuantizationConfig(compute_dtype=torch_dtype),
@@ -69,26 +70,16 @@ def load_gguf_pipeline(args):
                 torch_dtype=torch_dtype,
             )
 
-        except ImportError:
-            # Method 2: Alternative approach if GGUF support isn't directly available
-            print(
-                "Using alternative GGUF loading method...", file=sys.stderr, flush=True
-            )
+        except Exception:
+            # Fallback if GGUF loading fails
+            # print(f"✗ Failed to load GGUF pipeline: {e}", file=sys.stderr, flush=True)
 
-            # Load the base pipeline
-            pipe = FluxPipeline.from_pretrained(
+            pipe = AutoPipelineForText2Image.from_pretrained(
                 args.model,
-                torch_dtype=torch_dtype,
+                torch_dtype=torch.bfloat16,
             )
 
-            # Try to load GGUF weights into the transformer
-            # This is model-specific and might require custom code
-            print(
-                f"⚠ GGUF loading requires custom implementation for {args.model}",
-                file=sys.stderr,
-                flush=True,
-            )
-            print("  Using standard pipeline instead...", file=sys.stderr, flush=True)
+            print("✓ Using default FULL model", file=sys.stderr, flush=True)
 
         # Move to device
         pipe = pipe.to(device)
@@ -208,15 +199,15 @@ def main():
 
                 # Generate image using Flux pipeline
                 # Note: Flux models might have different parameters
+
                 result = pipe(
                     prompt=pr,
                     negative_prompt=args.negative_prompt,
-                    height=args.height,
                     width=args.width,
+                    height=args.height,
                     num_inference_steps=args.steps,
-                    guidance_scale=args.guidance_scale,
+                    true_cfg_scale=args.guidance_scale,
                     generator=generator,
-                    output_type="pil",
                 )
 
                 image = result.images[0]

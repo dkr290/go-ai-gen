@@ -242,10 +242,7 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 	if req.GGUFEnabled && ggufFilePath != "" {
 		args[1] = "python_scripts/qwen_t2i_gguf.py"
 		// Remove model argument and add GGUF arguments
-		args = append(args[:2], args[4:]...) // Remove --model and its value
 		args = append(args, "--gguf-file", ggufFilePath)
-		args = append(args, "--n-gpu-layers", fmt.Sprintf("%d", req.GGUFNGLayers))
-		args = append(args, "--n-threads", fmt.Sprintf("%d", req.GGUFNThreads))
 	} else {
 		// Keep original model argument
 		args = append(args, "--model", req.QwenModel)
