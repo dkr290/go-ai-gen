@@ -31,7 +31,7 @@ func main() {
 	app.Get("/", h.HandleHome)
 
 	// Submenu routes
-	app.Get("/flux1-dev-t2i", h.Flux1DevT2IHandler)
+	app.Get("/flux1-t2i", h.Flux1DevT2IHandler)
 	app.Post("/api/flux-t2i", h.FluxT2IAPIHandler)
 	app.Get("/flux1-kontext-i2i", h.Flux1KontextI2IHandler)
 	app.Get("/sd-t2i", h.SdT2IHandler)

@@ -149,43 +149,6 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 
 	}
 
-	ggufFilePath := ""
-	if req.GGUFEnabled && req.GGUFURL != "" {
-		// Create gguf directory if it doesn't exist
-		ggufDir := filepath.Join("downloads", "gguf")
-		if err := os.MkdirAll(ggufDir, 0o755); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to create GGUF directory: " + err.Error(),
-			})
-		}
-
-		// Generate unique filename for gguf file
-		cleanURL := req.GGUFURL
-		if strings.Contains(cleanURL, "?") {
-			cleanURL = strings.Split(cleanURL, "?")[0]
-		}
-		ggufFilename := filepath.Base(cleanURL)
-		// If filename is empty or weird, fallback to a safe name
-		if ggufFilename == "" || ggufFilename == "." || ggufFilename == "/" {
-			ggufFilename = fmt.Sprintf("qwen_gguf_%d.gguf", time.Now().Unix())
-		}
-
-		ggufFilePath = filepath.Join(ggufDir, ggufFilename)
-		// Check if file already exists
-		if _, err := os.Stat(ggufFilePath); os.IsNotExist(err) {
-
-			// Download the gguf file
-			if err := download.DownloadFile(req.GGUFURL, ggufFilePath); err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-					"error": "Failed to download GGUF file: " + err.Error(),
-				})
-			}
-			fmt.Printf("✓ GGUF file downloaded to: %s\n", ggufFilePath)
-		} else {
-			fmt.Printf("✓ GGUF file already exists at: %s (skipping download)\n", ggufFilePath)
-		}
-	}
-
 	// Prepare prompts JSON for Python script
 	promptsJSON, err := json.Marshal(promptsData)
 	if err != nil {

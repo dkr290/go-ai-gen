@@ -18,11 +18,7 @@ type HandlersPythonParams struct {
 	LoraAdapterName string  `form:"lora_adapter_name"`
 	HFToken         string  `form:"hf_token"` // Add this field
 	StaticSeed      string  `form:"static_seed"`
-	GPUDevices      string  `form:"gpu_devices"`       // Add this field
-	GGUFEnabled     bool    `form:"gguf_enabled"`      // Add this field
-	GGUFURL         string  `form:"gguf_url"`          // Add this field
-	GGUFNGLayers    int     `form:"gguf_n_gpu_layers"` // Add this field
-	GGUFNThreads    int     `form:"gguf_n_threads"`    // Add this field
+	GPUDevices      string  `form:"gpu_devices"` // Add this field
 }
 
 type PromptData struct {
@@ -34,5 +30,10 @@ type QwenT2IRequest struct {
 	HandlersPythonParams
 }
 type FluxT2IRequest struct {
+	GGUFEnabled  bool   `form:"gguf_enabled"`      // Add this field
+	GGUFURL      string `form:"gguf_url"`          // Add this field
+	GGUFNGLayers int    `form:"gguf_n_gpu_layers"` // Add this field
+	GGUFNThreads int    `form:"gguf_n_threads"`    // Add this field
+
 	HandlersPythonParams
 }
