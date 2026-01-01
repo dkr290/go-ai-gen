@@ -17,7 +17,7 @@
       </div>
       <div class="card-body">
         <form
-          hx-post="/api/qwen-t2i"
+          hx-post="/api/flux-t2i"
           hx-target="#result"
           hx-indicator="#loading"
           hx-timeout="0"
@@ -55,8 +55,8 @@
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="qwen_model" class="form-label">Flux Model</label>
-              <select class="form-select" id="qwen_model" name="qwen_model">
+              <label for="model" class="form-label">Flux Model</label>
+              <select class="form-select" id="model" name="model">
                 <option value="black-forest-labs/FLUX.1-dev" selected>
                   black-forest-labs/FLUX.1-dev
                 </option>
@@ -264,7 +264,6 @@
                   id="static_seed"
                   name="static_seed"
                   value="false"
-                  checked
                 />
                 <label class="form-check-label" for="static_seed">
                   Use static seed 42
@@ -522,7 +521,7 @@
     const ggufEnabled = document.getElementById("gguf_enabled").checked;
     const ggufFields = document.getElementById("gguf_fields");
     const ggufUrl = document.getElementById("gguf_url");
-    const modelSelect = document.getElementById("qwen_model");
+    const modelSelect = document.getElementById("model");
 
     if (ggufEnabled) {
       ggufFields.style.display = "block";
@@ -723,4 +722,3 @@
     }
   });
 </script>
-

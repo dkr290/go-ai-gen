@@ -212,10 +212,10 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		args[1] = "python_scripts/qwen_t2i_gguf.py"
 		// Remove model argument and add GGUF arguments
 		args = append(args, "--gguf-file", ggufFilePath)
-		args = append(args, "--model", req.QwenModel)
+		args = append(args, "--model", req.Model)
 	} else {
 		// Keep original model argument
-		args = append(args, "--model", req.QwenModel)
+		args = append(args, "--model", req.Model)
 	}
 
 	// Add GPU devices parameter
@@ -331,7 +331,7 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 			"seed":            seed,
 			"batch_size":      req.BatchSize,
 			"total_images":    totalImages,
-			"qwen_model":      req.QwenModel,
+			"model":           req.Model,
 			"negative_prompt": req.NegativePrompt,
 			"image_urls":      imageURLs,
 		},

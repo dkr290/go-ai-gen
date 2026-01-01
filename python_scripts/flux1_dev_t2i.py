@@ -107,7 +107,7 @@ def load_pipeline(args):
         torch_dtype = torch.float32
         device = "cpu"
     # Load pipeline (same as before)
-    if args.gguf and os.path.exists(args.gguf):
+    if args.gguf_file and os.path.exists(args.gguf_file):
         transformer = FluxTransformer2DModel.from_single_file(
             args.gguf,
             quantization_config=GGUFQuantizationConfig(compute_dtype=torch_dtype),
@@ -247,7 +247,9 @@ def main():
         print("WARNING: CUDA not available.", file=sys.stderr)
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="HuggingFace model ID")
-    parser.add_argument("--gguf", default="", help="Path to GGUF file (optional)")
+    parser.add_argument(
+        "--gguf-file", required=False, help="Path to GGUF file (optional)"
+    )
     parser.add_argument("--negative-prompt", default="")
     parser.add_argument("--width", type=int, default=1024)
     parser.add_argument("--height", type=int, default=1024)
@@ -366,4 +368,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

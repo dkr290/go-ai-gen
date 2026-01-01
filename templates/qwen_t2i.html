@@ -55,8 +55,8 @@
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="qwen_model" class="form-label">Qwen Model</label>
-              <select class="form-select" id="qwen_model" name="qwen_model">
+              <label for="model" class="form-label">Qwen Model</label>
+              <select class="form-select" id="model" name="model">
                 <option value="Qwen/Qwen-Image" selected>
                   Qwen/Qwen-Image
                 </option>
@@ -523,7 +523,7 @@
     const ggufEnabled = document.getElementById("gguf_enabled").checked;
     const ggufFields = document.getElementById("gguf_fields");
     const ggufUrl = document.getElementById("gguf_url");
-    const modelSelect = document.getElementById("qwen_model");
+    const modelSelect = document.getElementById("model");
 
     if (ggufEnabled) {
       ggufFields.style.display = "block";

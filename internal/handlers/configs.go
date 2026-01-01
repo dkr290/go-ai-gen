@@ -3,7 +3,7 @@ package handlers
 type HandlersPythonParams struct {
 	Prompt          string  `form:"prompt"`
 	Suffix          string  `form:"suffix"`
-	QwenModel       string  `form:"qwen_model"`
+	Model           string  `form:"model"`
 	AspectRatio     string  `form:"aspect_ratio"`
 	Steps           int     `form:"steps"`
 	Guidance        float64 `form:"guidance"`
