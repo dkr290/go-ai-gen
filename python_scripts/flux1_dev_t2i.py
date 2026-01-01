@@ -13,12 +13,7 @@ import sys
 import time
 
 import torch
-from diffusers import (
-    AutoPipelineForText2Image,
-    FluxPipeline,
-    FluxTransformer2DModel,
-    GGUFQuantizationConfig,
-)
+from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConfig
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
 
@@ -121,7 +116,7 @@ def load_pipeline(args):
         )
 
     else:
-        pipe = AutoPipelineForText2Image.from_pretrained(
+        pipe = FluxPipeline.from_pretrained(
             args.model,
             torch_dtype=torch_dtype,
         )
