@@ -52,7 +52,7 @@ The server will start on `http://localhost:8080`
 
 ## Dependencies
 
-- [chi](https://github.com/go-chi/chi) - Lightweight HTTP router
+- [fiber](https://github.com/go-chi/chi) - Lightweight HTTP router
 - Bootstrap 5.3 (CDN)
 - HTMX 1.9.10 (CDN)
 - Bootstrap Icons (CDN)
@@ -68,4 +68,3 @@ The server will start on `http://localhost:8080`
 ## Some loras for testing
 
 - starsfriday/Qwen-Image-NSFW/qwen_image_nsfw.safetensors
-
