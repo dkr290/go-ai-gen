@@ -1,153 +1,726 @@
-{{define "content"}}
 <div class="row">
-    <div class="col-12">
-        <div class="alert alert-primary">
-            <h4><i class="bi bi-lightning-charge me-2"></i>Flux1-dev Text-to-Image</h4>
-            <p class="mb-0">Generate images using the Flux1-dev model with text prompts.</p>
-        </div>
+  <div class="col-12">
+    <div class="alert alert-danger">
+      <h4><i class="bi bi-robot me-2"></i>Flux Text-to-Image</h4>
+      <p class="mb-0">
+        Generate images using Flux's advanced text-to-image capabilities.
+      </p>
     </div>
+  </div>
 </div>
 
 <div class="row mt-4">
-    <div class="col-md-8">
-        <div class="card">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Generation Parameters</h5>
+      </div>
+      <div class="card-body">
+        <form
+          hx-post="/api/qwen-t2i"
+          hx-target="#result"
+          hx-indicator="#loading"
+          hx-timeout="0"
+        >
+          <div class="mb-3">
+            <label for="prompt" class="form-label">Prompt</label>
+            <textarea
+              class="form-control"
+              id="prompt"
+              name="prompt"
+              rows="4"
+              placeholder='["A beautiful sunset over mountains", "A futuristic city at night", "A cute cat playing with yarn"]'
+              required
+            ></textarea>
+            <div class="form-text">
+              Enter prompts as a JSON array. Flux understands complex prompts
+              with multiple elements.
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="suffix" class="form-label"
+              >Image Enhancement suffux</label
+            >
+            <textarea
+              class="form-control"
+              id="suffix"
+              name="suffix"
+              rows="2"
+              placeholder="Ultra HD, 4K, cinematic composition, masterpiece"
+            ></textarea>
+            <div class="form-text">
+              Add quality enhancements to your prompt (comma-separated).
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="qwen_model" class="form-label">Flux Model</label>
+              <select class="form-select" id="qwen_model" name="qwen_model">
+                <option value="black-forest-labs/FLUX.1-dev" selected>
+                  black-forest-labs/FLUX.1-dev
+                </option>
+                <option value="black-forest-labs/FLUX.1-schnell">
+                  black-forest-labs/FLUX.1-schnell
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label for="aspect_ratio" class="form-label">Aspect Ratio</label>
+              <select class="form-select" id="aspect_ratio" name="aspect_ratio">
+                <option value="512x512">Small Square 1:1 (512x512)</option>
+                <option value="768x512">Small Landscape 3:2 (768x512)</option>
+                <option value="512x768">Small Portrait 2:3 (512x768)</option>
+                <option value="1024x1024">Medium Square 1:1 (1024x1024)</option>
+                <option value="1328x1328">Square 1:1-(1328, 1328)</option>
+                <option value="1472x1140">Standard 4:3-(1472, 1140)</option>
+                <option value="1664x928">Widescreen 16:9-(1664x928)</option>
+                <option value="928x1664" selected>
+                  Portrait 9x16-(928x1664)
+                </option>
+
+                <option value="1584x1056">Photo Big 3:2-(1584, 1056)</option>
+                <option value="1140x1472">Photo 3:4-(1140, 1472)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="steps" class="form-label">Steps</label>
+              <input
+                type="number"
+                class="form-control"
+                id="steps"
+                name="steps"
+                min="10"
+                max="100"
+                value="50"
+              />
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label for="guidance" class="form-label">Guidance Scale</label>
+              <input
+                type="range"
+                class="form-range"
+                id="guidance"
+                name="guidance"
+                min="1"
+                max="15"
+                step="0.5"
+                value="4.0"
+              />
+              <div class="form-text text-center" id="guidance_value">4.0</div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="form-check form-switch mt-4">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="low_vram"
+                  name="low_vram"
+                  value="true"
+                />
+                <label class="form-check-label" for="low_vram">
+                  Low VRAM Mode
+                </label>
+              </div>
+              <div class="form-text">
+                Enable for GPUs with less than 8GB VRAM
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="style_preset" class="form-label">Style Preset</label>
+            <select class="form-select" id="style_preset" name="style_preset">
+              <option value="none">No Style</option>
+              <option value="photorealistic" selected>Photorealistic</option>
+              <option value="anime">Anime</option>
+              <option value="digital_art">Digital Art</option>
+              <option value="painting">Painting</option>
+              <option value="sketch">Sketch</option>
+              <option value="watercolor">Watercolor</option>
+              <option value="cyberpunk">Cyberpunk</option>
+              <option value="fantasy">Fantasy</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="camera_shot" class="form-label">Camera Shot Type</label>
+            <select class="form-select" id="camera_shot" name="camera_shot">
+              <option value="">No specific shot (default)</option>
+              <!-- Distance / Framing -->
+              <option value="extreme close-up">Extreme Close-Up</option>
+              <option value="close-up shot">Close-Up Shot</option>
+              <option value="medium close-up">Medium Close-Up</option>
+              <option value="medium shot">Medium Shot</option>
+              <option value="medium full shot">Medium Full Shot</option>
+              <option value="full shot">Full Shot</option>
+              <option value="long shot">Long Shot</option>
+              <option value="extreme long shot">Extreme Long Shot</option>
+              <option value="establishing shot">Establishing Shot</option>
+              <option value="overhead shot">Overhead Shot</option>
+              <option value="medium shot from a low angle">
+                Medium Shot from a low angle
+              </option>
+
+              <!-- Angle / Perspective -->
+              <option value="eye-level shot">Eye-Level Shot</option>
+              <option value="high angle shot">High Angle Shot</option>
+              <option value="low angle shot">Low Angle Shot</option>
+              <option value="bird's eye view">Bird's Eye View</option>
+              <option value="worm's eye view">Worm's Eye View</option>
+              <option value="overhead shot">Overhead Shot</option>
+              <option value="top-down shot">Top-Down Shot</option>
+              <option value="bottom-up shot">Bottom-Up Shot</option>
+              <option value="dutch angle">Dutch Angle</option>
+              <option value="tilted angle">Tilted Angle</option>
+
+              <!-- Orientation / Direction -->
+              <option value="front shot">Front Shot</option>
+              <option value="side shot">Side Shot</option>
+              <option value="rear shot">Rear Shot</option>
+              <option value="three-quarter view">Three-Quarter View</option>
+              <option value="profile shot">Profile Shot</option>
+              <option value="over-the-shoulder shot">
+                Over-the-Shoulder Shot
+              </option>
+
+              <!-- POV -->
+              <option value="point of view">Point of View (POV)</option>
+              <option value="first-person view">First-Person View</option>
+              <option value="third-person view">Third-Person View</option>
+              <option value="subjective camera">Subjective Camera</option>
+
+              <!-- Lens / Optical -->
+              <option value="wide angle shot">Wide-Angle Shot</option>
+              <option value="ultra wide angle">Ultra-Wide Angle</option>
+              <option value="fisheye lens">Fisheye Lens</option>
+              <option value="telephoto shot">Telephoto Shot</option>
+              <option value="macro shot">Macro Shot</option>
+              <option value="tilt-shift">Tilt-Shift</option>
+
+              <!-- Focus / Depth -->
+              <option value="shallow depth of field">
+                Shallow Depth of Field
+              </option>
+              <option value="deep focus shot">Deep Focus Shot</option>
+              <option value="rack focus">Rack Focus</option>
+              <option value="soft focus">Soft Focus</option>
+              <option value="sharp focus">Sharp Focus</option>
+              <option value="bokeh background">Bokeh Background</option>
+
+              <!-- Motion / Style -->
+              <option value="cinematic shot">Cinematic Shot</option>
+              <option value="dynamic shot">Dynamic Shot</option>
+              <option value="action shot">Action Shot</option>
+              <option value="motion blur">Motion Blur</option>
+              <option value="freeze frame">Freeze Frame</option>
+
+              <!-- Detail / Mood -->
+              <option value="detail shot">Detail Shot</option>
+              <option value="insert shot">Insert Shot</option>
+              <option value="atmospheric shot">Atmospheric Shot</option>
+              <option value="moody shot">Moody Shot</option>
+              <option value="dramatic shot">Dramatic Shot</option>
+              <option value="minimalist shot">Minimalist Shot</option>
+
+              <!-- AI-Friendly Presets -->
+              <option value="cinematic close-up">Cinematic Close-Up</option>
+              <option value="wide cinematic shot">Wide Cinematic Shot</option>
+              <option value="epic establishing shot">
+                Epic Establishing Shot
+              </option>
+              <option value="environmental portrait">
+                Environmental Portrait
+              </option>
+              <option value="intimate portrait shot">
+                Intimate Portrait Shot
+              </option>
+            </select>
+            <div class="form-text">
+              Optional: Choose a camera shot type to control composition
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="seed" class="form-label">Seed</label>
+              <input
+                type="number"
+                class="form-control"
+                id="seed"
+                name="seed"
+                placeholder="Default 42"
+                value="42"
+              />
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="static_seed"
+                  name="static_seed"
+                  value="false"
+                  checked
+                />
+                <label class="form-check-label" for="static_seed">
+                  Use static seed 42
+                </label>
+              </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label for="batch_size" class="form-label">Batch Size</label>
+              <select class="form-select" id="batch_size" name="batch_size">
+                <option value="1">1 image</option>
+                <option value="2" selected>2 images</option>
+                <option value="4">4 images</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="gpu_devices" class="form-label">GPU Devices</label>
+              <select class="form-select" id="gpu_devices" name="gpu_devices">
+                <option value="0" selected>GPU 0 (Single)</option>
+                <option value="0,1">GPU 0 & 1 (Dual)</option>
+                <option value="0,1,2">GPU 0, 1 & 2 (Triple)</option>
+                <option value="0,1,2,3">All 4 GPUs</option>
+                <option value="auto">Auto-detect</option>
+              </select>
+              <div class="form-text">
+                Select GPUs for parallel processing. Requires sufficient VRAM.
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="negative_prompt" class="form-label"
+              >Negative Prompt</label
+            >
+            <textarea
+              class="form-control"
+              id="negative_prompt"
+              name="negative_prompt"
+              rows="2"
+              placeholder="What you don't want in the image..."
+            ></textarea>
+          </div>
+          <div class="card mb-3">
             <div class="card-header">
-                <h5 class="mb-0">Generation Parameters</h5>
+              <h6 class="mb-0">Hugging Face Authentication (Optional)</h6>
             </div>
             <div class="card-body">
-                <form hx-post="/api/flux1-dev-t2i" hx-target="#result" hx-indicator="#loading">
-                    <div class="mb-3">
-                        <label for="prompt" class="form-label">Prompt</label>
-                        <textarea class="form-control" id="prompt" name="prompt" rows="3" 
-                                  placeholder="Describe the image you want to generate..." required></textarea>
-                        <div class="form-text">Be descriptive for better results.</div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="negative_prompt" class="form-label">Negative Prompt</label>
-                            <textarea class="form-control" id="negative_prompt" name="negative_prompt" rows="2"
-                                      placeholder="What you don't want in the image..."></textarea>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="style" class="form-label">Style</label>
-                            <select class="form-select" id="style" name="style">
-                                <option value="realistic">Realistic</option>
-                                <option value="anime">Anime</option>
-                                <option value="painting">Painting</option>
-                                <option value="digital_art">Digital Art</option>
-                                <option value="photographic">Photographic</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="width" class="form-label">Width</label>
-                            <select class="form-select" id="width" name="width">
-                                <option value="512">512px</option>
-                                <option value="768" selected>768px</option>
-                                <option value="1024">1024px</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="height" class="form-label">Height</label>
-                            <select class="form-select" id="height" name="height">
-                                <option value="512">512px</option>
-                                <option value="768" selected>768px</option>
-                                <option value="1024">1024px</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="steps" class="form-label">Steps</label>
-                            <input type="number" class="form-control" id="steps" name="steps" 
-                                   min="1" max="100" value="20">
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="guidance_scale" class="form-label">Guidance Scale</label>
-                            <input type="range" class="form-range" id="guidance_scale" name="guidance_scale" 
-                                   min="1" max="20" step="0.5" value="7.5">
-                            <div class="form-text text-center" id="guidance_value">7.5</div>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="seed" class="form-label">Seed</label>
-                            <input type="number" class="form-control" id="seed" name="seed" 
-                                   placeholder="Random if empty">
-                        </div>
-                    </div>
-                    
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
-                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-magic me-1"></i>Generate Image
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Results</h5>
-            </div>
-            <div class="card-body">
-                <div id="loading" class="text-center" style="display: none;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2">Generating image...</p>
+              <div class="mb-3">
+                <label for="hf_token" class="form-label"
+                  >Hugging Face Token</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="hf_token"
+                  name="hf_token"
+                  placeholder="hf_xxxxxxxxxxxxxxxxxxxx"
+                  autocomplete="off"
+                />
+                <div class="form-text">
+                  Required for gated/private models. Get your token from
+                  <a
+                    href="https://huggingface.co/settings/tokens"
+                    target="_blank"
+                    >Hugging Face Settings</a
+                  >. Your token is only used for this request and not stored.
                 </div>
-                <div id="result">
-                    <div class="text-center text-muted">
-                        <i class="bi bi-image display-1"></i>
-                        <p class="mt-2">Your generated image will appear here</p>
-                    </div>
-                </div>
+              </div>
             </div>
-        </div>
-        
-        <div class="card mt-4">
+          </div>
+          <!-- GGUF Section -->
+          <div class="card mb-3">
             <div class="card-header">
-                <h5 class="mb-0">Model Info</h5>
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="gguf_enabled"
+                  name="gguf_enabled"
+                  value="true"
+                  onchange="toggleGGUFFields()"
+                />
+                <label class="form-check-label" for="gguf_enabled">
+                  <strong>Enable GGUF Model</strong>
+                </label>
+              </div>
             </div>
-            <div class="card-body">
-                <p><strong>Flux1-dev</strong> is a state-of-the-art text-to-image model optimized for high-quality image generation.</p>
-                <ul class="list-unstyled">
-                    <li><i class="bi bi-check-circle text-success me-2"></i>High resolution output</li>
-                    <li><i class="bi bi-check-circle text-success me-2"></i>Fast generation</li>
-                    <li><i class="bi bi-check-circle text-success me-2"></i>Multiple styles</li>
-                </ul>
+            <div class="card-body" id="gguf_fields" style="display: none">
+              <div class="mb-3">
+                <label for="gguf_url" class="form-label">GGUF File URL</label>
+                <input
+                  type="url"
+                  class="form-control"
+                  id="gguf_url"
+                  name="gguf_url"
+                  placeholder="https://huggingface.co/city96/FLUX.1-dev-gguf/resolve/main/flux1-dev-Q4_K_S.gguf"
+                  disabled
+                />
+                <div class="form-text">
+                  URL to download GGUF model file (.gguf format). When enabled,
+                  the Qwen Model dropdown will be disabled.
+                </div>
+              </div>
             </div>
-        </div>
+          </div>
+
+          <!-- LoRA Section -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="lora_enabled"
+                  name="lora_enabled"
+                  value="true"
+                  onchange="toggleLoraFields()"
+                />
+                <label class="form-check-label" for="lora_enabled">
+                  <strong>Enable LoRA</strong>
+                </label>
+              </div>
+            </div>
+            <div class="card-body" id="lora_fields" style="display: none">
+              <div class="mb-3">
+                <label for="lora_url" class="form-label">LoRA File URL</label>
+                <input
+                  type="url"
+                  class="form-control"
+                  id="lora_url"
+                  name="lora_url"
+                  placeholder="https://example.com/path/to/lora.safetensors"
+                  disabled
+                />
+                <div class="form-text">
+                  URL to download LoRA weights file (safetensors or .bin)
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="lora_adapter_name" class="form-label"
+                  >Adapter Name</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="lora_adapter_name"
+                  name="lora_adapter_name"
+                  placeholder="lora"
+                  value="uncensored"
+                  disabled
+                />
+                <div class="form-text">
+                  Name for the LoRA adapter (default: "lora")
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button
+              type="button"
+              class="btn btn-secondary me-md-2"
+              onclick="resetForm()"
+            >
+              <i class="bi bi-arrow-clockwise me-1"></i>Reset
+            </button>
+            <button type="submit" class="btn btn-danger" id="submit">
+              <i class="bi bi-robot me-1"></i>Generate Images
+            </button>
+          </div>
+
+          <!-- Progress bar container at the bottom -->
+          <div id="progressContainer" class="mt-4" style="display: none">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-muted small">Generation in progress...</span>
+              <span class="text-muted small" id="progressTime">0s</span>
+            </div>
+            <div class="progress" style="height: 8px">
+              <div
+                id="progressBar"
+                class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+                role="progressbar"
+                style="width: 0%"
+              ></div>
+            </div>
+            <div class="text-center mt-2">
+              <small class="text-muted" id="progressStatus"
+                >Initializing...</small
+              >
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
+</div>
+
+<div id="result" class="mt-4"></div>
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0">Model Info</h5>
+  </div>
+  <div class="card-body">
+    <p>
+      <strong>Flux</strong> is a multimodal AI model with advanced text-to-image
+      capabilities, understanding complex prompts and generating high-quality
+      images.
+    </p>
+    <ul class="list-unstyled">
+      <li>
+        <i class="bi bi-check-circle text-success me-2"></i>Multimodal
+        understanding
+      </li>
+      <li>
+        <i class="bi bi-check-circle text-success me-2"></i>Complex prompt
+        handling
+      </li>
+      <li>
+        <i class="bi bi-check-circle text-success me-2"></i>Multiple style
+        options
+      </li>
+    </ul>
+  </div>
 </div>
 
 <script>
-    // Update guidance scale value display
-    document.getElementById('guidance_scale').addEventListener('input', function() {
-        document.getElementById('guidance_value').textContent = this.value;
-    });
-    
-    function resetForm() {
-        document.querySelector('form').reset();
-        document.getElementById('guidance_value').textContent = '7.5';
-        document.getElementById('result').innerHTML = `
-            <div class="text-center text-muted">
-                <i class="bi bi-image display-1"></i>
-                <p class="mt-2">Your generated image will appear here</p>
+  // Update guidance scale value display
+  document.getElementById("guidance").addEventListener("input", function () {
+    document.getElementById("guidance_value").textContent = this.value;
+  });
+
+  // Toggle LoRA fields
+  function toggleLoraFields() {
+    const loraEnabled = document.getElementById("lora_enabled").checked;
+    const loraFields = document.getElementById("lora_fields");
+    const loraUrl = document.getElementById("lora_url");
+    const loraAdapter = document.getElementById("lora_adapter_name");
+
+    if (loraEnabled) {
+      loraFields.style.display = "block";
+      loraUrl.disabled = false;
+      loraAdapter.disabled = false;
+      loraUrl.required = true;
+    } else {
+      loraFields.style.display = "none";
+      loraUrl.disabled = true;
+      loraAdapter.disabled = true;
+      loraUrl.required = false;
+    }
+  }
+  function toggleGGUFFields() {
+    const ggufEnabled = document.getElementById("gguf_enabled").checked;
+    const ggufFields = document.getElementById("gguf_fields");
+    const ggufUrl = document.getElementById("gguf_url");
+    const modelSelect = document.getElementById("qwen_model");
+
+    if (ggufEnabled) {
+      ggufFields.style.display = "block";
+      ggufUrl.disabled = false;
+      ggufUrl.required = true;
+    } else {
+      ggufFields.style.display = "none";
+      ggufUrl.disabled = true;
+      ggufUrl.required = false;
+    }
+  }
+
+  // Initialize on page load
+  document.addEventListener("DOMContentLoaded", function () {
+    toggleLoraFields();
+    toggleGGUFFields();
+    // Set initial result message
+    document.getElementById("result").innerHTML = `
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-robot display-1"></i>
+        <p class="mt-2">Submit the form to generate images</p>
+        <p class="small">Generated images will be saved to downloads/generated directory</p>
+      </div>
+    `;
+  });
+
+  function resetForm() {
+    document.querySelector("form").reset();
+    document.getElementById("guidance_value").textContent = "4.0";
+    document.getElementById("result").innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-robot display-1"></i>
+                <p class="mt-2">Submit the form to generate images</p>
+                <p class="small">Generated images will be saved to downloads/generated directory</p>
             </div>
         `;
+    toggleLoraFields();
+    toggleGGUFFields();
+    // Hide progress bar on reset
+    document.getElementById("progressContainer").style.display = "none";
+    document.getElementById("submit").disabled = false;
+    document.getElementById("submit").innerHTML =
+      '<i class="bi bi-robot me-1"></i>Generate Images';
+  }
+
+  // Variables for progress tracking
+  let progressInterval;
+  let startTime;
+  let progressWidth = 0;
+  let isAnimating = false;
+  function startProgressAnimation() {
+    if (isAnimating) return;
+    isAnimating = true;
+    startTime = Date.now();
+    progressWidth = 0;
+    // Show progress container
+    const progressContainer = document.getElementById("progressContainer");
+    const progressBar = document.getElementById("progressBar");
+    const progressTime = document.getElementById("progressTime");
+    const progressStatus = document.getElementById("progressStatus");
+    progressContainer.style.display = "block";
+    progressBar.style.width = "0%";
+    progressStatus.textContent = "Initializing model...";
+    // Update timer
+    progressInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      progressTime.textContent = `${elapsed}s`;
+      // Animate progress bar (oscillating between 20% and 80% to show activity)
+      progressWidth = 20 + (Math.sin(Date.now() / 2000) * 30 + 30);
+      progressBar.style.width = `${progressWidth}%`;
+      // Update status messages based on time
+      if (elapsed < 10) {
+        progressStatus.textContent =
+          "Loading model and preparing generation...";
+      } else if (elapsed < 30) {
+        progressStatus.textContent =
+          "Generating images... This may take a while.";
+      } else if (elapsed < 60) {
+        progressStatus.textContent =
+          "Still generating... Complex prompts take longer.";
+      } else {
+        progressStatus.textContent = "Processing... Generation is in progress.";
+      }
+    }, 100);
+  }
+  function stopProgressAnimation(success = true) {
+    if (!isAnimating) return;
+    clearInterval(progressInterval);
+    isAnimating = false;
+    const progressBar = document.getElementById("progressBar");
+    const progressStatus = document.getElementById("progressStatus");
+    const progressContainer = document.getElementById("progressContainer");
+    if (success) {
+      // Show completion animation
+      progressBar.style.width = "100%";
+      progressBar.classList.remove("progress-bar-animated");
+      progressBar.classList.remove("bg-danger");
+      progressBar.classList.add("bg-success");
+      progressStatus.textContent = "✓ Generation completed!";
+      // Hide progress bar after 3 seconds
+      setTimeout(() => {
+        progressContainer.style.display = "none";
+        progressBar.classList.remove("bg-success");
+        progressBar.classList.add("bg-danger");
+        progressBar.classList.add("progress-bar-animated");
+      }, 3000);
+    } else {
+      // Hide on error
+      progressContainer.style.display = "none";
     }
+  }
+
+  document.addEventListener("htmx:beforeRequest", function (event) {
+    if (event.detail.target.id === "result") {
+      const submitBtn = document.getElementById("submit");
+
+      if (submitBtn) {
+        submitBtn.innerHTML =
+          '<i class="bi bi-hourglass-split me-1"></i>Generating...';
+        submitBtn.disabled = true;
+        startProgressAnimation();
+      }
+    }
+  });
+
+  document.addEventListener("htmx:afterRequest", function (event) {
+    if (event.detail.target.id === "result") {
+      const submitBtn = document.getElementById("submit");
+      if (submitBtn) {
+        submitBtn.innerHTML = '<i class="bi bi-robot me-1"></i>Generate Images';
+        submitBtn.disabled = false;
+        // Stop progress animation (will be handled by afterSwap for success)
+        if (event.detail.xhr.status !== 200) {
+          stopProgressAnimation(false);
+        }
+      }
+    }
+  });
+  document.addEventListener("htmx:responseError", function (event) {
+    if (event.detail.target.id === "result") {
+      stopProgressAnimation(false);
+      const submitBtn = document.getElementById("submit");
+      if (submitBtn) {
+        submitBtn.innerHTML = '<i class="bi bi-robot me-1"></i>Generate Images';
+        submitBtn.disabled = false;
+      }
+    }
+  });
+
+  document.addEventListener("htmx:afterSwap", function (event) {
+    if (event.detail.target.id === "result") {
+      const response = event.detail.xhr.response;
+      try {
+        const data = JSON.parse(response);
+        // Check for the correct response structure
+        if (data.success === true && data.data && data.data.image_urls) {
+          stopProgressAnimation(true);
+          document.getElementById("result").innerHTML = `
+            <div class="alert alert-success">
+              <i class="bi bi-check-circle me-2"></i>
+              <strong>Success!</strong> Generated ${data.data.total_images} images.
+              <p class="mt-2 mb-0">Images have been saved to the downloads/generated directory.</p>
+            </div>
+          `;
+        } else if (data.error) {
+          stopProgressAnimation(false);
+
+          // Show error message
+          document.getElementById("result").innerHTML = `
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Error:</strong> ${data.error}
+          </div>
+        `;
+        } else {
+          stopProgressAnimation(false);
+
+          // Fallback for unexpected response
+          document.getElementById("result").innerHTML = `
+          <div class="alert alert-warning">
+            <i class="bi bi-info-circle me-2"></i>
+            Unexpected response format. Check console for details.
+          </div>
+        `;
+          console.log("Unexpected response:", data);
+        }
+      } catch (e) {
+        console.error("Failed to parse response:", e);
+        stopProgressAnimation(false);
+
+        document.getElementById("result").innerHTML = `
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Error parsing response:</strong> ${e.message}
+        </div>
+      `;
+      }
+    }
+  });
 </script>
-{{end}}
+
