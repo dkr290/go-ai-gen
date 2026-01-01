@@ -339,41 +339,6 @@
               </div>
             </div>
           </div>
-          <!-- GGUF Section -->
-          <div class="card mb-3">
-            <div class="card-header">
-              <div class="form-check form-switch">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="gguf_enabled"
-                  name="gguf_enabled"
-                  value="true"
-                  onchange="toggleGGUFFields()"
-                />
-                <label class="form-check-label" for="gguf_enabled">
-                  <strong>Enable GGUF Model</strong>
-                </label>
-              </div>
-            </div>
-            <div class="card-body" id="gguf_fields" style="display: none">
-              <div class="mb-3">
-                <label for="gguf_url" class="form-label">GGUF File URL</label>
-                <input
-                  type="url"
-                  class="form-control"
-                  id="gguf_url"
-                  name="gguf_url"
-                  placeholder="https://huggingface.co/unsloth/Qwen-Image-2512-GGUF/resolve/main/Qwen-Image-2512-Q4_K_M.gguf"
-                  disabled
-                />
-                <div class="form-text">
-                  URL to download GGUF model file (.gguf format). When enabled,
-                  the Qwen Model dropdown will be disabled.
-                </div>
-              </div>
-            </div>
-          </div>
 
           <!-- LoRA Section -->
           <div class="card mb-3">

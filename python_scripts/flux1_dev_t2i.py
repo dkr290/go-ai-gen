@@ -39,6 +39,15 @@ def save_image(image: Image.Image, output_path: str) -> None:
         image.save(f, format="PNG", optimize=False)
 
 
+def debug_tokens(pipe, prompt):
+    tokens = pipe.tokenizer(
+        prompt, return_tensors="pt", padding=False, truncation=False
+    ).input_ids[0]
+
+    print(f"Token count: {len(tokens)}")
+    print(f"Tokens (first 50): {tokens[:50]}")
+
+
 def load_pipeline(args):
 
     print(f"Loading model: {args.model}", file=sys.stderr, flush=True)
@@ -104,7 +113,7 @@ def load_pipeline(args):
     # Load pipeline (same as before)
     if args.gguf_file and os.path.exists(args.gguf_file):
         transformer = FluxTransformer2DModel.from_single_file(
-            args.gguf,
+            args.gguf_file,
             quantization_config=GGUFQuantizationConfig(compute_dtype=torch_dtype),
             torch_dtype=torch_dtype,
         )
@@ -169,11 +178,21 @@ def load_pipeline(args):
             flush=True,
         )
         pipe.enable_model_cpu_offload()
-        pipe.enable_sequential_cpu_offload()
     else:
         pipe = pipe.to(device)
+        try:
+            pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+            print("✓ UNet compiled with torch.compile()", file=sys.stderr)
+        except Exception as e:
+            print(f"⚠ torch.compile failed: {e}", file=sys.stderr)
 
     pipe.set_progress_bar_config(disable=None)
+    try:
+        pipe.enable_xformers_memory_efficient_attention()
+        print("✓ xformers enabled", file=sys.stderr)
+    except Exception:
+        pass
+
     print(f"✓ Loaded Flux model: {args.model}", file=sys.stderr, flush=True)
     # Memory optimizations
     if args.low_vram:
@@ -184,16 +203,9 @@ def load_pipeline(args):
         print("✓ Low VRAM mode enabled", file=sys.stderr)
     else:
         if torch.cuda.is_available() and len(device_ids) <= 1:
-            pipe.to("cuda")
             print("✓ Full GPU mode", file=sys.stderr, flush=True)
         else:
             print("✓ CPU mode", file=sys.stderr, flush=True)
-
-    try:
-        pipe.enable_xformers_memory_efficient_attention()
-        print("✓ xformers enabled", file=sys.stderr)
-    except Exception:
-        pass
 
     # Load LoRA if specified
     if args.lora_file:
@@ -318,6 +330,7 @@ def main():
                     f" Guidence Scale: {args.guidance_scale}, Seed: {current_seed}",
                     file=sys.stderr,
                 )
+                debug_tokens(pipe, pr)
                 gen_start = time.time()
 
                 result = pipe(

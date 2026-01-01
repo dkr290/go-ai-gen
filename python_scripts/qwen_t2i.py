@@ -107,11 +107,17 @@ def load_pipeline(args):
             flush=True,
         )
         pipe.enable_model_cpu_offload()
-        pipe.enable_sequential_cpu_offload()
     else:
         pipe = pipe.to(device)
+        try:
+            pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+        except Exception as e:
+            print(f"⚠ torch.compile failed: {e}", file=sys.stderr)
+
+        print("✓ UNet compiled with torch.compile()", file=sys.stderr)
 
     pipe.set_progress_bar_config(disable=None)
+
     print(f"✓ Loaded Qwen-Image model: {args.model}", file=sys.stderr, flush=True)
 
     # Memory optimizations
@@ -121,11 +127,12 @@ def load_pipeline(args):
             pipe.enable_model_cpu_offload()
         pipe.enable_vae_slicing()
         pipe.enable_vae_tiling()
+        pipe.enable_attention_slicing("auto")
         print("✓ Low VRAM mode enabled", file=sys.stderr, flush=True)
     else:
         if torch.cuda.is_available() and len(device_ids) <= 1:
-            pipe.to("cuda")
             print("✓ Full GPU mode", file=sys.stderr, flush=True)
+
         else:
             print("✓ CPU mode", file=sys.stderr, flush=True)
 
@@ -148,7 +155,9 @@ def load_pipeline(args):
             print("  Continuing without LoRA...", file=sys.stderr)
 
     print(f"✓ Pipeline loaded in {time.time() - start:.1f}s", file=sys.stderr)
-
+    if hasattr(pipe, "safety_checker"):
+        pipe.safety_checker = None
+        print("✓ Safety checker disabled", file=sys.stderr)
     return pipe
 
 
