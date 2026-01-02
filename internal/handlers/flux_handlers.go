@@ -195,7 +195,7 @@ func (h *Handler) FluxT2IAPIHandler(c *fiber.Ctx) error {
 	}
 	// Call Python script
 	args := []string{
-		"python3", "python_scripts/flux_dev_t2i.py",
+		"python3", "python_scripts/flux_t2i.py",
 		"--width", fmt.Sprintf("%d", width),
 		"--height", fmt.Sprintf("%d", height),
 		"--steps", fmt.Sprintf("%d", req.Steps),

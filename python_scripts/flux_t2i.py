@@ -282,7 +282,8 @@ def main():
     # Performance flag
     parser.add_argument(
         "--low-vram",
-        action="store_true",
+        type=str,
+        default="false",
         help="Enable CPU offload and attention slicing for low VRAM GPUs",
     )
     parser.add_argument(
