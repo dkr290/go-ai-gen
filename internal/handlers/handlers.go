@@ -22,10 +22,6 @@ func (h *Handler) HandleHome(c *fiber.Ctx) error {
 	return c.Render("templates/index", fiber.Map{"Title": "Home"}, "templates/base")
 }
 
-func (h *Handler) Flux1DevT2IHandler(c *fiber.Ctx) error {
-	return c.SendString("Flux1-dev t2i API endpoint - will call Python script")
-}
-
 func (h *Handler) Flux1KontextI2IHandler(c *fiber.Ctx) error {
 	return c.SendString("Flux1-Kontext i2i API endpoint - will call Python script")
 }

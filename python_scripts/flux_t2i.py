@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+"""
+Flux1-dev Text-to-Image Python Script
+
+This script would be called by the Go backend to generate images using Flux1-dev.
+"""
+
 import argparse
 import json
 import logging
@@ -6,7 +13,7 @@ import sys
 import time
 
 import torch
-from diffusers import DiffusionPipeline
+from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConfig
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
 
@@ -16,7 +23,6 @@ env_keys = [
     "HUGGINGFACE_HUB_CACHE",
     "HF_TOKEN",
 ]
-
 print("=== Hugging Face ENV ===", file=sys.stderr, flush=True)
 for key in env_keys:
     print(f"{key}={os.environ.get(key)}", file=sys.stderr, flush=True)
@@ -33,12 +39,21 @@ def save_image(image: Image.Image, output_path: str) -> None:
         image.save(f, format="PNG", optimize=False)
 
 
+def debug_tokens(pipe, prompt):
+    tokens = pipe.tokenizer(
+        prompt, return_tensors="pt", padding=False, truncation=False
+    ).input_ids[0]
+
+    print(f"Token count: {len(tokens)}")
+    print(f"Tokens (first 50): {tokens[:50]}")
+
+
 def load_pipeline(args):
-    """Load Qwen-t2i pipeline with optional optimizations."""
 
-    print(f"Loading Qwen-t2i model: {args.model}", file=sys.stderr, flush=True)
+    print(f"Loading model: {args.model}", file=sys.stderr, flush=True)
+    if args.gguf:
+        print(f"Using GGUF: {args.gguf}", file=sys.stderr, flush=True)
 
-    # Parse device IDs - FIXED VERSION
     device_ids = []
     if args.device_id and args.device_id.strip():
         device_str = args.device_id.strip()
@@ -78,6 +93,7 @@ def load_pipeline(args):
     print(f"DEBUG: Using device IDs: {device_ids}", file=sys.stderr, flush=True)
 
     start = time.time()
+
     # Force simple progress bars for downloads
     os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "true"
     os.environ["DISABLE_TQDM"] = "true"
@@ -86,6 +102,7 @@ def load_pipeline(args):
     logging.basicConfig(level=logging.INFO)
 
     diffusers_logging.set_verbosity_error()
+
     # Determine device configuration
     if torch.cuda.is_available():
         torch_dtype = torch.bfloat16
@@ -93,12 +110,66 @@ def load_pipeline(args):
     else:
         torch_dtype = torch.float32
         device = "cpu"
+    # Load pipeline (same as before)
+    if args.gguf_file and os.path.exists(args.gguf_file):
+        transformer = FluxTransformer2DModel.from_single_file(
+            args.gguf_file,
+            quantization_config=GGUFQuantizationConfig(compute_dtype=torch_dtype),
+            torch_dtype=torch_dtype,
+        )
 
-    # Load Qwen-Image pipeline
-    pipe = DiffusionPipeline.from_pretrained(
-        args.model,
-        torch_dtype=torch_dtype,
-    )
+        pipe = FluxPipeline.from_pretrained(
+            args.model,
+            transformer=transformer,
+            torch_dtype=torch_dtype,
+        )
+
+    else:
+        pipe = FluxPipeline.from_pretrained(
+            args.model,
+            torch_dtype=torch_dtype,
+        )
+
+        print("✓ Using  using default FULL model", file=sys.stderr, flush=True)
+
+    if hasattr(pipe, "tokenizer"):
+        # Check and set model_max_length to 512
+        if hasattr(pipe.tokenizer, "model_max_length"):
+            current_max_length = pipe.tokenizer.model_max_length
+            if current_max_length != 512:
+                pipe.tokenizer.model_max_length = 512
+                print(
+                    f"✓ Tokenizer max length updated from {current_max_length} to 512.",
+                    file=sys.stderr,
+                )
+            else:
+                print("✓ Tokenizer max length is already 512.", file=sys.stderr)
+        else:
+            print(
+                "⚠ Warning: Tokenizer does not have 'model_max_length' attribute. Cannot enforce 512 tokens.",
+                file=sys.stderr,
+            )
+
+        # Check and disable add_prefix_space
+        if hasattr(pipe.tokenizer, "add_prefix_space"):
+            if pipe.tokenizer.add_prefix_space:
+                pipe.tokenizer.add_prefix_space = False
+                print(
+                    "✓ Disabled 'add_prefix_space' to avoid warnings.", file=sys.stderr
+                )
+            else:
+                print("✓ 'add_prefix_space' is already disabled.", file=sys.stderr)
+        else:
+            print(
+                "⚠ Warning: Tokenizer does not have 'add_prefix_space' attribute.",
+                file=sys.stderr,
+            )
+    else:
+        print(
+            "⚠ Warning: Pipeline does not have a tokenizer. Max length and prefix space checks skipped.",
+            file=sys.stderr,
+        )
+
     # SIMPLE MULTI-GPU: Use CPU offload for multiple GPUs
     if len(device_ids) > 1:
         print(
@@ -111,95 +182,101 @@ def load_pipeline(args):
         pipe = pipe.to(device)
         try:
             pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+            print("✓ UNet compiled with torch.compile()", file=sys.stderr)
         except Exception as e:
             print(f"⚠ torch.compile failed: {e}", file=sys.stderr)
 
-        print("✓ UNet compiled with torch.compile()", file=sys.stderr)
-
     pipe.set_progress_bar_config(disable=None)
+    try:
+        pipe.enable_xformers_memory_efficient_attention()
+        print("✓ xformers enabled", file=sys.stderr)
+    except Exception:
+        pass
 
-    print(f"✓ Loaded Qwen-Image model: {args.model}", file=sys.stderr, flush=True)
-
+    print(f"✓ Loaded Flux model: {args.model}", file=sys.stderr, flush=True)
     # Memory optimizations
-    if args.low_vram == "true":
-        # If already using CPU offload for multi-GPU, don't enable again
+    if args.low_vram:
         if len(device_ids) <= 1:
             pipe.enable_model_cpu_offload()
-        pipe.enable_vae_slicing()
-        pipe.enable_vae_tiling()
         pipe.enable_attention_slicing("auto")
-        print("✓ Low VRAM mode enabled", file=sys.stderr, flush=True)
+        pipe.enable_vae_tiling()
+        print("✓ Low VRAM mode enabled", file=sys.stderr)
     else:
         if torch.cuda.is_available() and len(device_ids) <= 1:
             print("✓ Full GPU mode", file=sys.stderr, flush=True)
-
         else:
             print("✓ CPU mode", file=sys.stderr, flush=True)
 
+    # Load LoRA if specified
     if args.lora_file:
-        print(f"Loading LoRA: {args.lora_file}", file=sys.stderr, flush=True)
+        print(f"Loading LoRA: {args.lora_file}", file=sys.stderr)
         try:
             # Get the directory containing the lora file
             lora_dir = os.path.dirname(args.lora_file)
             lora_filename = os.path.basename(args.lora_file)
 
-            # Load from local directory
+            # Load from local directory instead of HuggingFace
             pipe.load_lora_weights(
                 lora_dir,
                 weight_name=lora_filename,
                 adapter_name=args.lora_adapter_name,
             )
-            print("✓ LoRA loaded successfully", file=sys.stderr)
+            if hasattr(pipe, "safety_checker"):
+                pipe.safety_checker = None
+                print("✓ Safety checker disabled", file=sys.stderr)
         except Exception as e:
             print(f"⚠ LoRA loading failed: {e}", file=sys.stderr)
             print("  Continuing without LoRA...", file=sys.stderr)
 
-    print(f"✓ Pipeline loaded in {time.time() - start:.1f}s", file=sys.stderr)
-    if hasattr(pipe, "safety_checker"):
-        pipe.safety_checker = None
-        print("✓ Safety checker disabled", file=sys.stderr)
+    print(f"✓ Model loaded in {time.time() - start:.1f}s", file=sys.stderr)
+
+    # Cache the pipeline
     return pipe
 
 
 def main():
-    # Add diagnostic checks
+    # Add diagnostic checks here
     print(f"PyTorch version: {torch.__version__}", file=sys.stderr)
     print(f"CUDA available: {torch.cuda.is_available()}", file=sys.stderr)
     if torch.cuda.is_available():
         print(f"CUDA device count: {torch.cuda.device_count()}", file=sys.stderr)
         for i in range(torch.cuda.device_count()):
             print(f"  Device {i}: {torch.cuda.get_device_name(i)}", file=sys.stderr)
+            print(
+                f"    Memory allocated: {torch.cuda.memory_allocated(i)/1e9:.2f} GB",
+                file=sys.stderr,
+            )
+            print(
+                f"    Memory reserved: {torch.cuda.memory_reserved(i)/1e9:.2f} GB",
+                file=sys.stderr,
+            )
+    else:
+        print("WARNING: CUDA not available.", file=sys.stderr)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", required=True, help="HuggingFace model ID")
+    parser.add_argument(
+        "--gguf-file", required=False, help="Path to GGUF file (optional)"
+    )
+    parser.add_argument("--negative-prompt", default="")
+    parser.add_argument("--width", type=int, default=1024)
+    parser.add_argument("--height", type=int, default=1024)
+    parser.add_argument("--steps", type=int, default=28)
+    parser.add_argument("--guidance-scale", type=float, default=3.5)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--lora-file", default="", help="safesensoes file")
 
-    parser = argparse.ArgumentParser(description="Qwen-Image text-to-image generation")
     parser.add_argument(
-        "--model",
-        required=True,
-        help="HuggingFace model ID (e.g., Qwen/Qwen-Image)",
+        "--lora-adapter-name",
+        type=str,
+        default="",
+        help="Pass the name of lora adapter name",
     )
-    parser.add_argument(
-        "--negative-prompt", default="", help="Negative prompt for generation"
-    )
-    parser.add_argument("--width", type=int, default=1024, help="Output image width")
-    parser.add_argument("--height", type=int, default=1024, help="Output image height")
-    parser.add_argument(
-        "--steps", type=int, default=40, help="Number of inference steps"
-    )
-    parser.add_argument(
-        "--guidance-scale", type=float, default=1.0, help="Guidance scale (CFG)"
-    )
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    parser.add_argument(
-        "--output-dir", required=True, help="Output directory for generated images"
-    )
-    parser.add_argument(
-        "--num-images", default=1, type=int, help="Number of images per prompt"
-    )
-
-    # New argument to accept multiple prompts and their data for img2img
+    # New argument to accept multiple prompts and their data
     parser.add_argument(
         "--prompts",
         required=True,
-        help='JSON string of prompt data, e.g., \'["prompt1", "prompt2"]\'',
+        help='JSON string of prompt data, e.g., \'[{"prompt": "a dog", "filename": "dog.png"}]\'',
     )
 
     # Performance flag
@@ -210,17 +287,9 @@ def main():
         help="Enable CPU offload and attention slicing for low VRAM GPUs",
     )
     parser.add_argument(
-        "--lora-file",
-        type=str,
-        default="",
-        help="Pass lora weights as lora file from the card",
+        "--num-images", default=1, type=int, help="Number of images per prompt"
     )
-    parser.add_argument(
-        "--lora-adapter-name",
-        type=str,
-        default="",
-        help="Pass the name of lora adapter name",
-    )
+
     parser.add_argument(
         "--static-seed",
         type=str,
@@ -235,7 +304,6 @@ def main():
     )
 
     args = parser.parse_args()
-
     try:
         pipe = load_pipeline(args)
 
@@ -245,12 +313,12 @@ def main():
 
         for i, prompt in enumerate(prompts):
             for batch_index in range(args.num_images):
-
-                filename = prompt["filename"]
                 pr = prompt["prompt"]
+                filename = prompt["filename"]
                 name_without_ext, ext = os.path.splitext(filename)
                 batch_filename = f"{name_without_ext}_{batch_index}{ext}"
                 output_path = os.path.join(args.output_dir, batch_filename)
+                # Generate
                 if args.static_seed.lower() == "true":
                     current_seed = 42
                 else:
@@ -260,29 +328,30 @@ def main():
                 print(f"Generating: {pr[:60]}...", file=sys.stderr)
                 print(
                     f" Size: {args.width}x{args.height}, Steps: {args.steps}",
-                    f" CFG Scale: {args.guidance_scale}, Seed: {current_seed}",
+                    f" Guidence Scale: {args.guidance_scale}, Seed: {current_seed}",
                     file=sys.stderr,
                 )
+                debug_tokens(pipe, pr)
                 gen_start = time.time()
 
-                # Qwen-Image specific parameters
                 result = pipe(
                     prompt=pr,
                     negative_prompt=args.negative_prompt,
                     width=args.width,
                     height=args.height,
                     num_inference_steps=args.steps,
-                    true_cfg_scale=args.guidance_scale,
+                    guidance_scale=args.guidance_scale,
                     generator=generator,
                 )
 
                 image = result.images[0]
 
-                # Save image
+                # Save image (matching Go's approach)
                 save_image(image, output_path)
 
                 elapsed = time.time() - gen_start
                 print(f"✓ Saved to {output_path} in {elapsed:.1f}s", file=sys.stderr)
+
                 all_results.append(
                     {
                         "status": "success",
