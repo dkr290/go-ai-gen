@@ -31,22 +31,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check if tag exists in GHCR
+      - name: Check if tag exists in GHCR (fast API check)
         id: check-tag
         run: |
           IMAGE_NAME="${{ inputs.docker_image_name }}"
           TAG="${{ inputs.version }}"
+          REPO="${IMAGE_NAME#ghcr.io/}"
 
-          echo "Checking if tag exists: $IMAGE_NAME:$TAG"
+          echo "Checking if tag exists via GHCR API: $IMAGE_NAME:$TAG"
 
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-          if docker pull "$IMAGE_NAME:$TAG" 2>/dev/null; then
-            echo "Tag exists, skipping build"
-            echo "exists=true" >> $GITHUB_OUTPUT
+          # Query GHCR manifest API
+          if curl -s -f \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://ghcr.io/v2/$REPO/manifests/$TAG" > /dev/null; then
+              echo "Tag exists, skipping build"
+              echo "exists=true" >> $GITHUB_OUTPUT
           else
-            echo "Tag does not exist, will build"
-            echo "exists=false" >> $GITHUB_OUTPUT
+              echo "Tag does not exist, will build"
+              echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Set up Docker Buildx
