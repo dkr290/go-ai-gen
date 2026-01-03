@@ -95,7 +95,7 @@ jobs:
           context: .
           file: ${{ inputs.dockerfileName }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ inputs.version }}
+          tags: ${{ inputs.docker_image_name }}:${{ inputs.version }}
 
       - name: Skip build - tag already exists
         if: steps.check-tag.outputs.exists == 'true'
