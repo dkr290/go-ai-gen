@@ -205,11 +205,11 @@ func (h *Handler) FluxT2IAPIHandler(c *fiber.Ctx) error {
 		"--num-images", fmt.Sprintf("%d", req.BatchSize),
 		"--prompts", string(promptsJSON),
 		"--low-vram", strconv.FormatBool(req.LowVRAM),
+		"--quant-mode", req.QuantMode,
 	}
 
 	// If GGUF is enabled, use the GGUF script instead
 	if req.GGUFEnabled && ggufFilePath != "" {
-		args[1] = "python_scripts/qwen_t2i_gguf.py"
 		// Remove model argument and add GGUF arguments
 		args = append(args, "--gguf-file", ggufFilePath)
 		args = append(args, "--model", req.Model)

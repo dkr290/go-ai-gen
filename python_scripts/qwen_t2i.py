@@ -9,6 +9,7 @@ import torch
 from diffusers import DiffusionPipeline
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
+from transformers import BitsAndBytesConfig
 
 env_keys = [
     "HF_HOME",
@@ -94,10 +95,34 @@ def load_pipeline(args):
         torch_dtype = torch.float32
         device = "cpu"
 
-    # Load Qwen-Image pipeline
+    # Add quantization config
+    quant_config = None
+    if args.quant_mode in ["fp4", "4bit"]:
+        print(
+            f"✓ Loading Qwen-Image with {args.quant_mode} quantization...",
+            file=sys.stderr,
+        )
+        if args.quant_mode == "4bit":
+            quant_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch_dtype,
+                bnb_4bit_quant_type="nf4",
+            )
+        elif args.quant_mode == "fp4":
+            quant_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch_dtype,
+                bnb_4bit_quant_type="fp4",
+            )
+    elif args.quant_mode == "fp8":
+        print("✓ Loading Qwen-Image in FP8 precision...", file=sys.stderr)
+        torch_dtype = torch.float8_e4m3fn
+
+    # Load Qwen-Image pipeline with optional quantization
     pipe = DiffusionPipeline.from_pretrained(
         args.model,
         torch_dtype=torch_dtype,
+        quantization_config=quant_config,
     )
     # SIMPLE MULTI-GPU: Use CPU offload for multiple GPUs
     if len(device_ids) > 1:
@@ -232,6 +257,12 @@ def main():
         type=str,
         default="0",
         help="GPU device ID(s) to use (e.g., '0', '0,1', 'cuda:0,cuda:1')",
+    )
+    parser.add_argument(
+        "--quant-mode",
+        choices=["bf16", "fp8", "fp4", "4bit"],
+        default="bf16",
+        help="Precision mode for model loading",
     )
 
     args = parser.parse_args()

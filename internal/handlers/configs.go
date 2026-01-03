@@ -28,12 +28,14 @@ type PromptData struct {
 
 type QwenT2IRequest struct {
 	HandlersPythonParams
+	QuantMode string `json:"quant_mode"`
 }
 type FluxT2IRequest struct {
 	GGUFEnabled  bool   `form:"gguf_enabled"`      // Add this field
 	GGUFURL      string `form:"gguf_url"`          // Add this field
 	GGUFNGLayers int    `form:"gguf_n_gpu_layers"` // Add this field
 	GGUFNThreads int    `form:"gguf_n_threads"`    // Add this field
+	QuantMode    string `json:"quant_mode"`
 
 	HandlersPythonParams
 }

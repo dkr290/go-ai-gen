@@ -16,6 +16,7 @@ import torch
 from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConfig
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
+from transformers import BitsAndBytesConfig, T5EncoderModel
 
 env_keys = [
     "HF_HOME",
@@ -51,8 +52,8 @@ def debug_tokens(pipe, prompt):
 def load_pipeline(args):
 
     print(f"Loading model: {args.model}", file=sys.stderr, flush=True)
-    if args.gguf:
-        print(f"Using GGUF: {args.gguf}", file=sys.stderr, flush=True)
+    if args.gguf_file:
+        print(f"Using GGUF: {args.gguf_file}", file=sys.stderr, flush=True)
 
     device_ids = []
     if args.device_id and args.device_id.strip():
@@ -110,27 +111,68 @@ def load_pipeline(args):
     else:
         torch_dtype = torch.float32
         device = "cpu"
-    # Load pipeline (same as before)
+    print("--- Loading Components ---", file=sys.stderr)
+
+    # 1. OPTIMIZATION: Quantize the T5-XXL Text Encoder
+    # This is the 10GB component. We quantize it to 4-bit to save ~7GB VRAM.
+    t5_config = None
+    if args.low_vram.lower() == "true" or args.quant_mode in ["4bit", "fp4"]:
+        print("✓ Quantizing T5-XXL to 4-bit NF4...", file=sys.stderr)
+        if args.quant_mode == "4bit":
+            t5_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch_dtype,
+                bnb_4bit_quant_type="nf4",
+            )
+        elif args.quant_mode == "fp4":
+            t5_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch_dtype,
+                bnb_4bit_quant_type="fp4",
+            )
+
+    text_encoder_2 = T5EncoderModel.from_pretrained(
+        args.model,
+        subfolder="text_encoder_2",
+        quantization_config=t5_config,
+        torch_dtype=torch_dtype,
+    )
+    # 2. TRANSFORMER: Load GGUF or standard with specific precision
+    transformer = None
     if args.gguf_file and os.path.exists(args.gguf_file):
+        print(f"✓ Loading GGUF: {args.gguf_file}", file=sys.stderr)
         transformer = FluxTransformer2DModel.from_single_file(
             args.gguf_file,
             quantization_config=GGUFQuantizationConfig(compute_dtype=torch_dtype),
             torch_dtype=torch_dtype,
         )
-
-        pipe = FluxPipeline.from_pretrained(
+    elif args.quant_mode == "fp8":
+        print("✓ Loading Transformer in FP8 precision...", file=sys.stderr)
+        # Note: Requires recent diffusers/accelerate and Blackwell/Ada/Hopper GPU
+        transformer = FluxTransformer2DModel.from_pretrained(
+            args.model, subfolder="transformer", torch_dtype=torch.float8_e4m3fn
+        )
+    elif args.quant_mode == "fp4":
+        print("✓ Loading Transformer in FP4 precision...", file=sys.stderr)
+        # FP4 quantization for transformer
+        transformer = FluxTransformer2DModel.from_pretrained(
             args.model,
-            transformer=transformer,
+            subfolder="transformer",
             torch_dtype=torch_dtype,
+            quantization_config=BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch_dtype,
+                bnb_4bit_quant_type="fp4",
+            ),
         )
 
-    else:
-        pipe = FluxPipeline.from_pretrained(
-            args.model,
-            torch_dtype=torch_dtype,
-        )
-
-        print("✓ Using  using default FULL model", file=sys.stderr, flush=True)
+    # 3. PIPELINE ASSEMBLY
+    pipe = FluxPipeline.from_pretrained(
+        args.model,
+        transformer=transformer,
+        text_encoder_2=text_encoder_2,
+        torch_dtype=torch_dtype,
+    )
 
     if hasattr(pipe, "tokenizer"):
         # Check and set model_max_length to 512
@@ -181,8 +223,12 @@ def load_pipeline(args):
     else:
         pipe = pipe.to(device)
         try:
-            pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
-            print("✓ UNet compiled with torch.compile()", file=sys.stderr)
+            # Flux uses transformer, not unet
+            if hasattr(pipe, "transformer"):
+                pipe.transformer = torch.compile(
+                    pipe.transformer, mode="reduce-overhead", fullgraph=True
+                )
+                print("✓ Transformer compiled with torch.compile()", file=sys.stderr)
         except Exception as e:
             print(f"⚠ torch.compile failed: {e}", file=sys.stderr)
 
@@ -195,7 +241,7 @@ def load_pipeline(args):
 
     print(f"✓ Loaded Flux model: {args.model}", file=sys.stderr, flush=True)
     # Memory optimizations
-    if args.low_vram:
+    if args.low_vram.lower() == "true":
         if len(device_ids) <= 1:
             pipe.enable_model_cpu_offload()
         pipe.enable_attention_slicing("auto")
@@ -302,6 +348,12 @@ def main():
         default="0",
         help="GPU device ID(s) to use (e.g., '0', '0,1', 'cuda:0,cuda:1')",
     )
+    parser.add_argument(
+        "--quant-mode",
+        choices=["bf16", "fp8", "fp4", "4bit"],
+        default="bf16",
+        help="Precision mode",
+    )
 
     args = parser.parse_args()
     try:
@@ -342,6 +394,7 @@ def main():
                     num_inference_steps=args.steps,
                     guidance_scale=args.guidance_scale,
                     generator=generator,
+                    max_sequence_length=512,
                 )
 
                 image = result.images[0]

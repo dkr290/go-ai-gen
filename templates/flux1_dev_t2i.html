@@ -131,6 +131,38 @@
                 Enable for GPUs with less than 8GB VRAM
               </div>
             </div>
+            <!-- Add Quantization Mode Selector -->
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <label for="quant_mode" class="form-label"
+                  >Quantization Mode
+                  <span
+                    class="tooltip-info"
+                    title="Lower precision modes use less VRAM but may affect quality"
+                    >ⓘ</span
+                  >
+                </label>
+                <select class="form-select" id="quant_mode" name="quant_mode">
+                  <option value="bf16" selected>
+                    Full Model (bf16) - Best quality
+                  </option>
+                  <option value="fp8">
+                    FP8 Precision - Good quality, less VRAM
+                  </option>
+                  <option value="fp4">
+                    FP4 Quantization - Low VRAM, decent quality
+                  </option>
+                  <option value="4bit">
+                    4-bit NF4 - Minimal VRAM, basic quality
+                  </option>
+                </select>
+                <div class="quant-help">
+                  <strong>bf16</strong>: Full precision (16+ GB VRAM) |
+                  <strong>fp8</strong>: ~8 GB VRAM | <strong>fp4/4bit</strong>:
+                  ~4-6 GB VRAM
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="mb-3">
@@ -366,8 +398,9 @@
                   disabled
                 />
                 <div class="form-text">
-                  URL to download GGUF model file (.gguf format). When enabled,
-                  the Qwen Model dropdown will be disabled.
+                  URL to download GGUF model file (.gguf format).
+                  <strong>Note:</strong> When GGUF is enabled, quantization mode
+                  is ignored.
                 </div>
               </div>
             </div>
@@ -521,16 +554,22 @@
     const ggufEnabled = document.getElementById("gguf_enabled").checked;
     const ggufFields = document.getElementById("gguf_fields");
     const ggufUrl = document.getElementById("gguf_url");
-    const modelSelect = document.getElementById("model");
+    const quantModeSelect = document.getElementById("quant_mode");
 
     if (ggufEnabled) {
       ggufFields.style.display = "block";
       ggufUrl.disabled = false;
       ggufUrl.required = true;
+      // Disable quantization mode when GGUF is enabled
+      quantModeSelect.disabled = true;
+      quantModeSelect.title = "Quantization mode is disabled when using GGUF";
     } else {
       ggufFields.style.display = "none";
       ggufUrl.disabled = true;
       ggufUrl.required = false;
+      // Re-enable quantization mode
+      quantModeSelect.disabled = false;
+      quantModeSelect.title = "";
     }
   }
 

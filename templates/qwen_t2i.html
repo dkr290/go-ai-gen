@@ -132,6 +132,38 @@
                 Enable for GPUs with less than 8GB VRAM
               </div>
             </div>
+            <!-- Add Quantization Mode Selector -->
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <label for="quant_mode" class="form-label"
+                  >Quantization Mode
+                  <span
+                    class="tooltip-info"
+                    title="Lower precision modes use less VRAM but may affect quality"
+                    >ⓘ</span
+                  >
+                </label>
+                <select class="form-select" id="quant_mode" name="quant_mode">
+                  <option value="bf16" selected>
+                    Full Model (bf16) - Best quality
+                  </option>
+                  <option value="fp8">
+                    FP8 Precision - Good quality, less VRAM
+                  </option>
+                  <option value="fp4">
+                    FP4 Quantization - Low VRAM, decent quality
+                  </option>
+                  <option value="4bit">
+                    4-bit NF4 - Minimal VRAM, basic quality
+                  </option>
+                </select>
+                <div class="quant-help">
+                  <strong>bf16</strong>: Full precision (16+ GB VRAM) |
+                  <strong>fp8</strong>: ~8 GB VRAM | <strong>fp4/4bit</strong>:
+                  ~4-6 GB VRAM
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="mb-3">
@@ -484,27 +516,10 @@
       loraUrl.required = false;
     }
   }
-  function toggleGGUFFields() {
-    const ggufEnabled = document.getElementById("gguf_enabled").checked;
-    const ggufFields = document.getElementById("gguf_fields");
-    const ggufUrl = document.getElementById("gguf_url");
-    const modelSelect = document.getElementById("model");
-
-    if (ggufEnabled) {
-      ggufFields.style.display = "block";
-      ggufUrl.disabled = false;
-      ggufUrl.required = true;
-    } else {
-      ggufFields.style.display = "none";
-      ggufUrl.disabled = true;
-      ggufUrl.required = false;
-    }
-  }
 
   // Initialize on page load
   document.addEventListener("DOMContentLoaded", function () {
     toggleLoraFields();
-    toggleGGUFFields();
     // Set initial result message
     document.getElementById("result").innerHTML = `
       <div class="text-center text-muted py-5">
@@ -526,7 +541,6 @@
             </div>
         `;
     toggleLoraFields();
-    toggleGGUFFields();
     // Hide progress bar on reset
     document.getElementById("progressContainer").style.display = "none";
     document.getElementById("submit").disabled = false;

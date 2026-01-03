@@ -168,6 +168,7 @@ func (h *Handler) QwenT2IAPIHandler(c *fiber.Ctx) error {
 		"--num-images", fmt.Sprintf("%d", req.BatchSize),
 		"--prompts", string(promptsJSON),
 		"--low-vram", strconv.FormatBool(req.LowVRAM),
+		"--quant-mode", req.QuantMode,
 	}
 
 	// Add GPU devices parameter
