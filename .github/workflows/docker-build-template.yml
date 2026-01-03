@@ -40,9 +40,10 @@ jobs:
 
           echo "Checking if tag exists via GHCR API: $IMAGE_NAME:$TAG"
 
-          # Query GHCR manifest API
+          # GHCR requires a specific Accept header or it returns 404 even if the tag exists
           if curl -s -f \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.oci.image.manifest.v1+json" \
             "https://ghcr.io/v2/$REPO/manifests/$TAG" > /dev/null; then
               echo "Tag exists, skipping build"
               echo "exists=true" >> $GITHUB_OUTPUT
