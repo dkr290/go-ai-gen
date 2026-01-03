@@ -36,16 +36,16 @@ jobs:
         run: |
           IMAGE_NAME="${{ inputs.docker_image_name }}"
           TAG="${{ inputs.version }}"
-          REPO="${IMAGE_NAME#ghcr.io/}"
+
           echo "Checking if tag exists: $IMAGE_NAME:$TAG"
+
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-
-          if docker pull "$IMAGE_NAME:$TAG 2>/dev/null"; then
+          if docker pull "$IMAGE_NAME:$TAG" 2>/dev/null; then
             echo "Tag exists, skipping build"
             echo "exists=true" >> $GITHUB_OUTPUT
           else
-            echo "Tag does not exist (HTTP $RESPONSE), will build"
+            echo "Tag does not exist, will build"
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
