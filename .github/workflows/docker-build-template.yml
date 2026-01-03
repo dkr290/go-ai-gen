@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check if tag exists in GHCR (fast API check)
+      - name: Check if tag exists in GHCR (correct token flow)
         id: check-tag
         run: |
           IMAGE_NAME="${{ inputs.docker_image_name }}"
@@ -40,9 +40,21 @@ jobs:
 
           echo "Checking if tag exists via GHCR API: $IMAGE_NAME:$TAG"
 
-          # GHCR requires a specific Accept header or it returns 404 even if the tag exists
+          # Request a registry token for the repo
+          TOKEN=$(curl -s \
+            -u "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
+            "https://ghcr.io/token?scope=repository:$REPO:pull" \
+            | jq -r '.token')
+
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "Failed to obtain registry token"
+            echo "exists=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Query manifest
           if curl -s -f \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: Bearer $TOKEN" \
             -H "Accept: application/vnd.oci.image.manifest.v1+json" \
             "https://ghcr.io/v2/$REPO/manifests/$TAG" > /dev/null; then
               echo "Tag exists, skipping build"
