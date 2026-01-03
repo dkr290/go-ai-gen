@@ -92,8 +92,8 @@ jobs:
         if: steps.check-tag.outputs.exists == 'false'
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ${{ inputs.folder }}/${{ inputs.dockerfileName }}
+          context: ./
+          file: ./${{ inputs.folder }}/${{ inputs.dockerfileName }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
