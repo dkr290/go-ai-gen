@@ -16,7 +16,7 @@ import torch
 from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConfig
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
-from transformers import BitsAndBytesConfig, T5EncoderModel
+from transformers import BitsAndBytesConfig, CLIPTextModel, T5EncoderModel
 
 env_keys = [
     "HF_HOME",
@@ -112,6 +112,14 @@ def load_pipeline(args):
         torch_dtype = torch.float32
         device = "cpu"
     print("--- Loading Components ---", file=sys.stderr)
+    # Check if custom encoders are enabled
+    use_custom_encoders = args.custom_encoders.lower() == "true"
+
+    if use_custom_encoders:
+        encoder_model_id = args.encoder_repo
+        print(f"✓ Using custom text encoders from {encoder_model_id}", file=sys.stderr)
+    else:
+        encoder_model_id = args.model
 
     # 1. OPTIMIZATION: Quantize the T5-XXL Text Encoder
     # This is the 10GB component. We quantize it to 4-bit to save ~7GB VRAM.
@@ -132,11 +140,21 @@ def load_pipeline(args):
             )
 
     text_encoder_2 = T5EncoderModel.from_pretrained(
-        args.model,
+        encoder_model_id,
         subfolder="text_encoder_2",
         quantization_config=t5_config,
         torch_dtype=torch_dtype,
     )
+    # Load text_encoder (CLIP-based) only if using custom encoders
+    text_encoder = None
+    if use_custom_encoders:
+        print("✓ Loading custom CLIP text encoder...", file=sys.stderr)
+        text_encoder = CLIPTextModel.from_pretrained(
+            encoder_model_id,
+            subfolder="text_encoder",
+            torch_dtype=torch_dtype,
+        )
+
     # 2. TRANSFORMER: Load GGUF or standard with specific precision
     transformer = None
     if args.gguf_file and os.path.exists(args.gguf_file):
@@ -167,12 +185,17 @@ def load_pipeline(args):
         )
 
     # 3. PIPELINE ASSEMBLY
-    pipe = FluxPipeline.from_pretrained(
-        args.model,
-        transformer=transformer,
-        text_encoder_2=text_encoder_2,
-        torch_dtype=torch_dtype,
-    )
+    pipeline_kwargs = {
+        "transformer": transformer,
+        "text_encoder_2": text_encoder_2,
+        "torch_dtype": torch_dtype,
+    }
+    # Only add text_encoder if we loaded a custom one
+    if text_encoder is not None:
+        pipeline_kwargs["text_encoder"] = text_encoder
+        print("✓ Using custom CLIP text encoder in pipeline", file=sys.stderr)
+
+    pipe = FluxPipeline.from_pretrained(args.model, **pipeline_kwargs)
 
     if hasattr(pipe, "tokenizer"):
         # Check and set model_max_length to 512
@@ -353,6 +376,18 @@ def main():
         choices=["bf16", "fp8", "fp4", "4bit"],
         default="bf16",
         help="Precision mode",
+    )
+    parser.add_argument(
+        "--custom-encoders",
+        type=str,
+        default="false",
+        help="Use custom text encoders",
+    )
+    parser.add_argument(
+        "--encoder-repo",
+        type=str,
+        default="comfyanonymous/flux_text_encoders",
+        help="HuggingFace repository for custom text encoders",
     )
 
     args = parser.parse_args()

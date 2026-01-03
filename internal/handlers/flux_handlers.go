@@ -227,6 +227,11 @@ func (h *Handler) FluxT2IAPIHandler(c *fiber.Ctx) error {
 			args = append(args, "--device-id", req.GPUDevices)
 		}
 	}
+	// Add custom encoders flag if enabled
+	if req.CustomEncodersEnabled && req.EncoderRepo != "" {
+		args = append(args, "--custom-encoders", "true")
+		args = append(args, "--encoder-repo", req.EncoderRepo)
+	}
 
 	if req.NegativePrompt != "" {
 		args = append(args, "--negative-prompt", req.NegativePrompt)

@@ -456,6 +456,48 @@
                 </div>
               </div>
             </div>
+            <div class="card mb-3">
+              <div class="card-header">
+                <div class="form-check form-switch">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="custom_encoders_enabled"
+                    name="custom_encoders_enabled"
+                    value="true"
+                    onchange="toggleEncoderFields()"
+                  />
+                  <label class="form-check-label" for="custom_encoders_enabled">
+                    <strong>Enable Custom Text Encoders</strong>
+                  </label>
+                </div>
+              </div>
+              <div class="card-body" id="encoder_fields" style="display: none">
+                <div class="mb-3">
+                  <label for="encoder_repo" class="form-label"
+                    >Encoder Repository</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="encoder_repo"
+                    name="encoder_repo"
+                    placeholder="comfyanonymous/flux_text_encoders"
+                    value="comfyanonymous/flux_text_encoders"
+                  />
+                  <div class="form-text">
+                    HuggingFace repository containing custom text encoders.
+                    Leave as default for recommended encoders.
+                  </div>
+                </div>
+                <div class="alert alert-info mb-0">
+                  <i class="bi bi-info-circle me-2"></i>
+                  Uses custom text encoders from the specified repository. May
+                  improve text understanding and image quality. Will download
+                  ~12GB of data on first use (cached locally).
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -530,6 +572,21 @@
   document.getElementById("guidance").addEventListener("input", function () {
     document.getElementById("guidance_value").textContent = this.value;
   });
+  function toggleEncoderFields() {
+    const encoderEnabled = document.getElementById(
+      "custom_encoders_enabled",
+    ).checked;
+    const encoderFields = document.getElementById("encoder_fields");
+    const encoderRepo = document.getElementById("encoder_repo");
+
+    if (encoderEnabled) {
+      encoderFields.style.display = "block";
+      encoderRepo.disabled = false;
+    } else {
+      encoderFields.style.display = "none";
+      encoderRepo.disabled = true;
+    }
+  }
 
   // Toggle LoRA fields
   function toggleLoraFields() {
@@ -577,6 +634,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     toggleLoraFields();
     toggleGGUFFields();
+    toggleEncoderFields();
     // Set initial result message
     document.getElementById("result").innerHTML = `
       <div class="text-center text-muted py-5">
@@ -599,6 +657,7 @@
         `;
     toggleLoraFields();
     toggleGGUFFields();
+    toggleEncoderFields();
     // Hide progress bar on reset
     document.getElementById("progressContainer").style.display = "none";
     document.getElementById("submit").disabled = false;
