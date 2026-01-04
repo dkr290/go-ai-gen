@@ -67,6 +67,7 @@ RUN pip3 install --no-cache-dir \
   protobuf \
   pillow \
   xformers \
+  bitsandbytes \
   hf_transfer \
   gguf>=0.10.0 \
   peft  && \
