@@ -52,6 +52,8 @@ COPY --from=builder /app/go-ai-gen /app/
 
 # Copy Python script
 COPY python_scripts/*.py /app/python_scripts/
+# Copy startup script
+COPY start.sh /app/start.sh
 
 
 # Install Python dependencies
@@ -67,28 +69,24 @@ RUN pip3 install --no-cache-dir \
   xformers \
   hf_transfer \
   gguf>=0.10.0 \
-  peft  \
-  && rm -rf ~/.cache/pip
+  peft  && \
+  rm -rf ~/.cache/pip && \ 
+  mkdir -p  /app/downloads && \
+  mkdir -p /run/sshd && \
+  echo 'root:root' | chpasswd && \
+  sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+  sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+  chmod +x /app/start.sh
 
-# Create directories for runtime data
-RUN mkdir -p  /app/downloads 
 #   && echo "export HF_HOME=/app/models/.cache" > /etc/profile.d/hf_home.sh
 
 
 # Set library path for CUDA
 ENV LD_LIBRARY_PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}"
 
-# SSH for Runpod
-RUN mkdir -p /run/sshd && \
-  echo 'root:root' | chpasswd && \
-  sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-  sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 # Expose SSH port
 EXPOSE 22 8080
 
-# Copy startup script
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
 # Start SSH server in foreground for Runpod
 CMD ["/bin/bash", "/app/start.sh"]
 
