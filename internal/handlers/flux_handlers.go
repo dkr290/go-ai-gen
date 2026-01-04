@@ -207,7 +207,7 @@ func (h *Handler) FluxT2IAPIHandler(c *fiber.Ctx) error {
 		"--low-vram", strconv.FormatBool(req.LowVRAM),
 		"--quant-mode", req.QuantMode,
 	}
-
+	fmt.Println(req.QuantMode)
 	// If GGUF is enabled, use the GGUF script instead
 	if req.GGUFEnabled && ggufFilePath != "" {
 		// Remove model argument and add GGUF arguments

@@ -384,7 +384,7 @@ def main():
     )
     parser.add_argument(
         "--quant-mode",
-        choices=["bf16", "fp8"],
+        type=str,
         default="bf16",
         help="Precision mode",
     )

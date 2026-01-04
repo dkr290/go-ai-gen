@@ -28,16 +28,16 @@ type PromptData struct {
 
 type QwenT2IRequest struct {
 	HandlersPythonParams
-	QuantMode string `json:"quant_mode"`
+	QuantMode string `form:"quant_mode"`
 }
 type FluxT2IRequest struct {
 	GGUFEnabled           bool   `form:"gguf_enabled"`      // Add this field
 	GGUFURL               string `form:"gguf_url"`          // Add this field
 	GGUFNGLayers          int    `form:"gguf_n_gpu_layers"` // Add this field
 	GGUFNThreads          int    `form:"gguf_n_threads"`    // Add this field
-	QuantMode             string `json:"quant_mode"`
-	CustomEncodersEnabled bool   `json:"custom_encoders_enabled"`
-	EncoderRepo           string `json:"encoder_repo"`
+	QuantMode             string `form:"quant_mode"`
+	CustomEncodersEnabled bool   `form:"custom_encoders_enabled"`
+	EncoderRepo           string `form:"encoder_repo"`
 
 	HandlersPythonParams
 }
