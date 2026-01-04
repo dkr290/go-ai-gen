@@ -26,7 +26,7 @@ jobs:
     with:
       name: Build and push go-ai-gen image generator docker image
       docker_image_name: ghcr.io/${{ github.repository }}/go-ai-gen
-      version: "2.8.25"
+      version: "2.8.27"
       folder: .
       dockerfileName: Dockerfile
   post-cleanup:

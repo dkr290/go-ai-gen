@@ -207,8 +207,8 @@ func SanitizeFilenameForImage(prompt string, index int) string {
 
 	// Take first 10 characters (or less) for the prompt part
 	promptPart := sanitized
-	if len(promptPart) > 10 {
-		promptPart = promptPart[:10]
+	if len(promptPart) > 20 {
+		promptPart = promptPart[:20]
 	}
 
 	// Remove trailing dash if present

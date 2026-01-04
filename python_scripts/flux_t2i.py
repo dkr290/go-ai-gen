@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ g#!/usr/bin/env python3
 """
 Flux1-dev Text-to-Image Python Script
 
@@ -14,7 +14,8 @@ import time
 
 import torch
 from diffusers import BitsAndBytesConfig as DiffusersBitsAndBytesConfig
-from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConfig
+from diffusers import (FluxPipeline, FluxTransformer2DModel,
+                       GGUFQuantizationConfig)
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
 from transformers import BitsAndBytesConfig as TransformersBitsAndBytesConfig
@@ -48,7 +49,6 @@ def debug_tokens(pipe, prompt):
     ).input_ids[0]
 
     print(f"Token count: {len(tokens)}")
-    print(f"Tokens (first 50): {tokens[:50]}")
 
 
 def load_pipeline(args):

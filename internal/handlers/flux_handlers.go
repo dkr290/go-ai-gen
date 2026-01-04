@@ -77,7 +77,7 @@ func (h *Handler) FluxT2IAPIHandler(c *fiber.Ctx) error {
 	var promptsData []PromptData
 	for i, prompt := range prompts {
 
-		filename := utils.SanitizeFilenameForImage(prompt, i+1)
+		filename := utils.SanitizeFilenameForImage(req.CameraShot+" "+prompt, i+1)
 		enhanced := strings.TrimSpace(prompt)
 
 		if req.CameraShot != "" {
