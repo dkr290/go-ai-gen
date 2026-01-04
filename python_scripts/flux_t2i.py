@@ -195,49 +195,13 @@ def load_pipeline(args):
         print("✓ Using custom CLIP text encoder in pipeline", file=sys.stderr)
 
     # Use device_map for multi-GPU if specified
+    if args.quant_mode == "fp8":
+        pipeline_kwargs["device_map"] = "balanced"
     if len(device_ids) > 1:
         pipeline_kwargs["device_map"] = "balanced"
         print("✓ Using 'balanced' device map for multi-GPU", file=sys.stderr)
 
     pipe = FluxPipeline.from_pretrained(args.model, **pipeline_kwargs)
-
-    if hasattr(pipe, "tokenizer"):
-        # Check and set model_max_length to 512
-        if hasattr(pipe.tokenizer, "model_max_length"):
-            current_max_length = pipe.tokenizer.model_max_length
-            if current_max_length != 512:
-                pipe.tokenizer.model_max_length = 512
-                print(
-                    f"✓ Tokenizer max length updated from {current_max_length} to 512.",
-                    file=sys.stderr,
-                )
-            else:
-                print("✓ Tokenizer max length is already 512.", file=sys.stderr)
-        else:
-            print(
-                "⚠ Warning: Tokenizer does not have 'model_max_length' attribute. Cannot enforce 512 tokens.",
-                file=sys.stderr,
-            )
-
-        # Check and disable add_prefix_space
-        if hasattr(pipe.tokenizer, "add_prefix_space"):
-            if pipe.tokenizer.add_prefix_space:
-                pipe.tokenizer.add_prefix_space = False
-                print(
-                    "✓ Disabled 'add_prefix_space' to avoid warnings.", file=sys.stderr
-                )
-            else:
-                print("✓ 'add_prefix_space' is already disabled.", file=sys.stderr)
-        else:
-            print(
-                "⚠ Warning: Tokenizer does not have 'add_prefix_space' attribute.",
-                file=sys.stderr,
-            )
-    else:
-        print(
-            "⚠ Warning: Pipeline does not have a tokenizer. Max length and prefix space checks skipped.",
-            file=sys.stderr,
-        )
 
     # SIMPLE MULTI-GPU: Use CPU offload for multiple GPUs
     # Handle device placement if not using device_map
