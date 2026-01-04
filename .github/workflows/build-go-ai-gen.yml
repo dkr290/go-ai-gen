@@ -11,10 +11,35 @@ on:
 jobs:
   # This workflow contains a single job called "build"
   build-api-service:
-    uses: dkr290/go-ai-gen/.github/workflows/docker-build-template.yml@main
-    with:
-      name: Build and push go-ai-gen image generator docker image
-      docker_image_name: ghcr.io/${{ github.repository }}/go-ai-gen
-      version: "2.8.21"
-      folder: .
-      dockerfileName: Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Clean up disk space before build
+        run: |
+          # Remove unused Docker resources
+          docker system prune -a -f --volumes || true
+
+          # Clean up apt cache
+          sudo apt-get clean
+
+          # Remove old logs and temporary files
+          sudo rm -rf /var/log/*.gz /var/log/*.log.*
+
+          # Check disk space
+          df -h
+
+      - name: Build and Push docker image
+        uses: dkr290/go-ai-gen/.github/workflows/docker-build-template.yml@main
+        with:
+          name: Build and push go-ai-gen image generator docker image
+          docker_image_name: ghcr.io/${{ github.repository }}/go-ai-gen
+          version: "2.8.21"
+          folder: .
+          dockerfileName: Dockerfile
+      - name: Clean up disk space after build
+        if: always()
+        run: |
+          docker system prune -a -f --volumes || true
+          df -h
