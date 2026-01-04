@@ -13,10 +13,12 @@ import sys
 import time
 
 import torch
+from diffusers import BitsAndBytesConfig as DiffusersBitsAndBytesConfig
 from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConfig
 from diffusers.utils import logging as diffusers_logging
 from PIL import Image
-from transformers import BitsAndBytesConfig, CLIPTextModel, T5EncoderModel
+from transformers import BitsAndBytesConfig as TransformersBitsAndBytesConfig
+from transformers import CLIPTextModel, T5EncoderModel
 
 env_keys = [
     "HF_HOME",
@@ -121,30 +123,27 @@ def load_pipeline(args):
     else:
         encoder_model_id = args.model
 
-    # 1. OPTIMIZATION: Quantize the T5-XXL Text Encoder
-    # This is the 10GB component. We quantize it to 4-bit to save ~7GB VRAM.
-    t5_config = None
-    if args.low_vram.lower() == "true" or args.quant_mode in ["4bit", "fp4"]:
-        print("✓ Quantizing T5-XXL to 4-bit NF4...", file=sys.stderr)
-        if args.quant_mode == "4bit":
-            t5_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch_dtype,
-                bnb_4bit_quant_type="nf4",
-            )
-        elif args.quant_mode == "fp4":
-            t5_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch_dtype,
-                bnb_4bit_quant_type="fp4",
-            )
+    # 1. TEXT ENCODER: Load with quantization if requested
+    text_encoder_2 = None
 
-    text_encoder_2 = T5EncoderModel.from_pretrained(
-        encoder_model_id,
-        subfolder="text_encoder_2",
-        quantization_config=t5_config,
-        torch_dtype=torch_dtype,
-    )
+    if args.quant_mode == "fp8":
+        print("✓ Loading T5 text encoder in 8-bit...", file=sys.stderr)
+        quant_config = TransformersBitsAndBytesConfig(load_in_8bit=True)
+        text_encoder_2 = T5EncoderModel.from_pretrained(
+            encoder_model_id,
+            subfolder="text_encoder_2",
+            quantization_config=quant_config,
+            torch_dtype=torch.float16,
+        )
+
+    else:
+        # Load without quantization
+        text_encoder_2 = T5EncoderModel.from_pretrained(
+            encoder_model_id,
+            subfolder="text_encoder_2",
+            torch_dtype=torch_dtype,
+        )
+
     # Load text_encoder (CLIP-based) only if using custom encoders
     text_encoder = None
     if use_custom_encoders:
@@ -165,35 +164,40 @@ def load_pipeline(args):
             torch_dtype=torch_dtype,
         )
     elif args.quant_mode == "fp8":
-        print("✓ Loading Transformer in FP8 precision...", file=sys.stderr)
-        # Note: Requires recent diffusers/accelerate and Blackwell/Ada/Hopper GPU
+        print("✓ Loading Transformer in 8-bit...", file=sys.stderr)
+        quant_config = DiffusersBitsAndBytesConfig(load_in_8bit=True)
         transformer = FluxTransformer2DModel.from_pretrained(
-            args.model, subfolder="transformer", torch_dtype=torch.float8_e4m3fn
+            args.model,
+            subfolder="transformer",
+            torch_dtype=torch.float16,
+            quantization_config=quant_config,
         )
-    elif args.quant_mode == "fp4":
-        print("✓ Loading Transformer in FP4 precision...", file=sys.stderr)
-        # FP4 quantization for transformer
+    else:
+        # Load transformer without quantization
         transformer = FluxTransformer2DModel.from_pretrained(
             args.model,
             subfolder="transformer",
             torch_dtype=torch_dtype,
-            quantization_config=BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch_dtype,
-                bnb_4bit_quant_type="fp4",
-            ),
         )
 
     # 3. PIPELINE ASSEMBLY
     pipeline_kwargs = {
-        "transformer": transformer,
         "text_encoder_2": text_encoder_2,
         "torch_dtype": torch_dtype,
     }
+
+    # Add transformer if we loaded it separately
+    if transformer is not None:
+        pipeline_kwargs["transformer"] = transformer
     # Only add text_encoder if we loaded a custom one
     if text_encoder is not None:
         pipeline_kwargs["text_encoder"] = text_encoder
         print("✓ Using custom CLIP text encoder in pipeline", file=sys.stderr)
+
+    # Use device_map for multi-GPU if specified
+    if len(device_ids) > 1:
+        pipeline_kwargs["device_map"] = "balanced"
+        print("✓ Using 'balanced' device map for multi-GPU", file=sys.stderr)
 
     pipe = FluxPipeline.from_pretrained(args.model, **pipeline_kwargs)
 
@@ -236,24 +240,29 @@ def load_pipeline(args):
         )
 
     # SIMPLE MULTI-GPU: Use CPU offload for multiple GPUs
-    if len(device_ids) > 1:
-        print(
-            f"✓ Using {len(device_ids)} GPUs with CPU offload",
-            file=sys.stderr,
-            flush=True,
-        )
-        pipe.enable_model_cpu_offload()
-    else:
-        pipe = pipe.to(device)
-        try:
-            # Flux uses transformer, not unet
-            if hasattr(pipe, "transformer"):
-                pipe.transformer = torch.compile(
-                    pipe.transformer, mode="reduce-overhead", fullgraph=True
-                )
-                print("✓ Transformer compiled with torch.compile()", file=sys.stderr)
-        except Exception as e:
-            print(f"⚠ torch.compile failed: {e}", file=sys.stderr)
+    # Handle device placement if not using device_map
+    if "device_map" not in pipeline_kwargs:
+
+        if len(device_ids) > 1:
+            print(
+                f"✓ Using {len(device_ids)} GPUs with CPU offload",
+                file=sys.stderr,
+                flush=True,
+            )
+            pipe.enable_model_cpu_offload()
+        else:
+            pipe = pipe.to(device)
+            try:
+                # Flux uses transformer, not unet
+                if hasattr(pipe, "transformer"):
+                    pipe.transformer = torch.compile(
+                        pipe.transformer, mode="reduce-overhead", fullgraph=True
+                    )
+                    print(
+                        "✓ Transformer compiled with torch.compile()", file=sys.stderr
+                    )
+            except Exception as e:
+                print(f"⚠ torch.compile failed: {e}", file=sys.stderr)
 
     pipe.set_progress_bar_config(disable=None)
     try:
@@ -265,10 +274,12 @@ def load_pipeline(args):
     print(f"✓ Loaded Flux model: {args.model}", file=sys.stderr, flush=True)
     # Memory optimizations
     if args.low_vram.lower() == "true":
-        if len(device_ids) <= 1:
-            pipe.enable_model_cpu_offload()
-        pipe.enable_attention_slicing("auto")
-        pipe.enable_vae_tiling()
+        if len(device_ids) <= 1 and "device_map" not in pipeline_kwargs:
+            pipe.enable_sequential_cpu_offload()
+        if hasattr(pipe, "vae"):
+            pipe.vae.enable_slicing()
+            pipe.vae.enable_tiling()
+        pipe.to(torch.float16)
         print("✓ Low VRAM mode enabled", file=sys.stderr)
     else:
         if torch.cuda.is_available() and len(device_ids) <= 1:
@@ -373,7 +384,7 @@ def main():
     )
     parser.add_argument(
         "--quant-mode",
-        choices=["bf16", "fp8", "fp4", "4bit"],
+        choices=["bf16", "fp8"],
         default="bf16",
         help="Precision mode",
     )
@@ -421,16 +432,28 @@ def main():
                 debug_tokens(pipe, pr)
                 gen_start = time.time()
 
-                result = pipe(
-                    prompt=pr,
-                    negative_prompt=args.negative_prompt,
-                    width=args.width,
-                    height=args.height,
-                    num_inference_steps=args.steps,
-                    guidance_scale=args.guidance_scale,
-                    generator=generator,
-                    max_sequence_length=512,
-                )
+                if args.model == "black-forest-labs/FLUX.1-schnell":
+                    result = pipe(
+                        prompt=pr,
+                        negative_prompt=args.negative_prompt,
+                        width=args.width,
+                        height=args.height,
+                        num_inference_steps=args.steps,
+                        guidance_scale=0.0,
+                        generator=generator,
+                        max_sequence_length=256,
+                    )
+
+                else:
+                    result = pipe(
+                        prompt=pr,
+                        negative_prompt=args.negative_prompt,
+                        width=args.width,
+                        height=args.height,
+                        num_inference_steps=args.steps,
+                        guidance_scale=args.guidance_scale,
+                        generator=generator,
+                    )
 
                 image = result.images[0]
 

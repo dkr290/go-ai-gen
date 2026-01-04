@@ -39,7 +39,7 @@
           </div>
           <div class="mb-3">
             <label for="suffix" class="form-label"
-              >Image Enhancement suffux</label
+              >Image Enhancement suffix</label
             >
             <textarea
               class="form-control"
@@ -55,7 +55,15 @@
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="model" class="form-label">Flux Model</label>
+              <label for="model" class="form-label"
+                >Flux Model
+                <span
+                  class="tooltip-info"
+                  title="FLUX.1-dev: Full model, 20-50 steps recommended | FLUX.1-schnell: Distilled model, 4-8 steps recommended"
+                  data-bs-toggle="tooltip"
+                  >ⓘ</span
+                >
+              </label>
               <select class="form-select" id="model" name="model">
                 <option value="black-forest-labs/FLUX.1-dev" selected>
                   black-forest-labs/FLUX.1-dev
@@ -88,7 +96,16 @@
 
           <div class="row">
             <div class="col-md-4 mb-3">
-              <label for="steps" class="form-label">Steps</label>
+              <label for="steps" class="form-label"
+                >Steps
+                <span
+                  class="tooltip-info"
+                  title="Flux-dev normally 50 , flux-shnell 4"
+                  data-bs-toggle="tooltip"
+                  >ⓘ</span
+                >
+              </label>
+
               <input
                 type="number"
                 class="form-control"
@@ -139,6 +156,7 @@
                   <span
                     class="tooltip-info"
                     title="Lower precision modes use less VRAM but may affect quality"
+                    data-bs-toggle="tooltip"
                     >ⓘ</span
                   >
                 </label>
@@ -149,17 +167,10 @@
                   <option value="fp8">
                     FP8 Precision - Good quality, less VRAM
                   </option>
-                  <option value="fp4">
-                    FP4 Quantization - Low VRAM, decent quality
-                  </option>
-                  <option value="4bit">
-                    4-bit NF4 - Minimal VRAM, basic quality
-                  </option>
                 </select>
                 <div class="quant-help">
                   <strong>bf16</strong>: Full precision (16+ GB VRAM) |
-                  <strong>fp8</strong>: ~8 GB VRAM | <strong>fp4/4bit</strong>:
-                  ~4-6 GB VRAM
+                  <strong>fp8</strong>: ~8 GB VRAM
                 </div>
               </div>
             </div>
@@ -637,24 +648,31 @@
     toggleEncoderFields();
     // Set initial result message
     document.getElementById("result").innerHTML = `
-      <div class="text-center text-muted py-5">
-        <i class="bi bi-robot display-1"></i>
-        <p class="mt-2">Submit the form to generate images</p>
-        <p class="small">Generated images will be saved to downloads/generated directory</p>
-      </div>
-    `;
+       <div class="text-center text-muted py-5">
+         <i class="bi bi-robot display-1"></i>
+         <p class="mt-2">Submit the form to generate images</p>
+         <p class="small">Generated images will be saved to downloads/generated directory</p>
+       </div>
+     `;
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(
+      document.querySelectorAll('[data-bs-toggle="tooltip"]'),
+    );
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
   });
 
   function resetForm() {
     document.querySelector("form").reset();
     document.getElementById("guidance_value").textContent = "4.0";
     document.getElementById("result").innerHTML = `
-            <div class="text-center text-muted py-5">
-                <i class="bi bi-robot display-1"></i>
-                <p class="mt-2">Submit the form to generate images</p>
-                <p class="small">Generated images will be saved to downloads/generated directory</p>
-            </div>
-        `;
+             <div class="text-center text-muted py-5">
+                 <i class="bi bi-robot display-1"></i>
+                 <p class="mt-2">Submit the form to generate images</p>
+                 <p class="small">Generated images will be saved to downloads/generated directory</p>
+             </div>
+         `;
     toggleLoraFields();
     toggleGGUFFields();
     toggleEncoderFields();
@@ -778,32 +796,32 @@
         if (data.success === true && data.data && data.data.image_urls) {
           stopProgressAnimation(true);
           document.getElementById("result").innerHTML = `
-            <div class="alert alert-success">
-              <i class="bi bi-check-circle me-2"></i>
-              <strong>Success!</strong> Generated ${data.data.total_images} images.
-              <p class="mt-2 mb-0">Images have been saved to the downloads/generated directory.</p>
-            </div>
-          `;
+             <div class="alert alert-success">
+               <i class="bi bi-check-circle me-2"></i>
+               <strong>Success!</strong> Generated ${data.data.total_images} images.
+               <p class="mt-2 mb-0">Images have been saved to the downloads/generated directory.</p>
+             </div>
+           `;
         } else if (data.error) {
           stopProgressAnimation(false);
 
           // Show error message
           document.getElementById("result").innerHTML = `
-          <div class="alert alert-danger">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            <strong>Error:</strong> ${data.error}
-          </div>
-        `;
+           <div class="alert alert-danger">
+             <i class="bi bi-exclamation-triangle me-2"></i>
+             <strong>Error:</strong> ${data.error}
+           </div>
+         `;
         } else {
           stopProgressAnimation(false);
 
           // Fallback for unexpected response
           document.getElementById("result").innerHTML = `
-          <div class="alert alert-warning">
-            <i class="bi bi-info-circle me-2"></i>
-            Unexpected response format. Check console for details.
-          </div>
-        `;
+           <div class="alert alert-warning">
+             <i class="bi bi-info-circle me-2"></i>
+             Unexpected response format. Check console for details.
+           </div>
+         `;
           console.log("Unexpected response:", data);
         }
       } catch (e) {
@@ -811,11 +829,11 @@
         stopProgressAnimation(false);
 
         document.getElementById("result").innerHTML = `
-        <div class="alert alert-danger">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          <strong>Error parsing response:</strong> ${e.message}
-        </div>
-      `;
+         <div class="alert alert-danger">
+           <i class="bi bi-exclamation-triangle me-2"></i>
+           <strong>Error parsing response:</strong> ${e.message}
+         </div>
+       `;
       }
     }
   });
