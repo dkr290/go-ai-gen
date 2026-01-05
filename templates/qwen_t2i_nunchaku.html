@@ -1,9 +1,13 @@
 <div class="row">
   <div class="col-12">
     <div class="alert alert-success">
-      <h4><i class="bi bi-rocket-takeoff me-2"></i>Nunchaku Qwen Quantized Text-to-Image</h4>
+      <h4>
+        <i class="bi bi-rocket-takeoff me-2"></i>Nunchaku Qwen Quantized
+        Text-to-Image
+      </h4>
       <p class="mb-0">
-        Generate images using Nunchaku's optimized quantized Qwen models for fast, memory-efficient inference.
+        Generate images using Nunchaku's optimized quantized Qwen models for
+        fast, memory-efficient inference.
       </p>
     </div>
   </div>
@@ -53,37 +57,30 @@
             </div>
           </div>
 
-          <!-- Nunchaku Info Box -->
-          <div class="alert alert-info mb-3">
-            <h6 class="mb-2">
-              <i class="bi bi-info-circle me-2"></i>How Nunchaku Works
-            </h6>
-            <ul class="mb-0 small">
-              <li><strong>Automatic Precision:</strong> Nunchaku detects your GPU memory and selects optimal precision (bf16/fp16/fp32)</li>
-              <li><strong>Optimized Transformer:</strong> Uses pre-quantized transformer for faster inference</li>
-              <li><strong>Single GPU:</strong> Optimized for single GPU usage (no multi-GPU needed)</li>
-              <li><strong>Memory Efficient:</strong> Works on GPUs with 6GB+ VRAM</li>
-            </ul>
-          </div>
-
           <div class="row">
             <div class="col-md-12 mb-3">
-              <label for="nunchaku_model" class="form-label">
-                Nunchaku Quantized Model
+              <label for="model" class="form-label"
+                >Qwen Model
                 <span
                   class="tooltip-info"
                   title="Nunchaku uses the base model with its optimized transformer - all variants use the same repo"
                   >ⓘ</span
                 >
               </label>
-              <select class="form-select" id="nunchaku_model" name="nunchaku_model">
-                <option value="nunchaku-tech/nunchaku-qwen-image" selected>
-                  nunchaku-qwen-image (Optimized Transformer)
+              <select class="form-select" id="model" name="model">
+                <option value="Qwen/Qwen-Image" selected>
+                  Qwen/Qwen-Image (Nunchaku based)
                 </option>
               </select>
               <div class="form-text">
-                Nunchaku automatically selects optimal precision based on your GPU memory.
-                Visit <a href="https://huggingface.co/nunchaku-tech/nunchaku-qwen-image" target="_blank">HuggingFace</a> for details.
+                Nunchaku automatically selects optimal precision based on your
+                GPU memory. Visit
+                <a
+                  href="https://huggingface.co/nunchaku-tech/nunchaku-qwen-image"
+                  target="_blank"
+                  >HuggingFace</a
+                >
+                for details.
               </div>
             </div>
           </div>
@@ -140,22 +137,11 @@
               <div class="form-text text-center" id="guidance_value">4.0</div>
             </div>
             <div class="col-md-6 mb-3">
-              <div class="form-check form-switch mt-4">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="low_vram"
-                  name="low_vram"
-                  value="true"
-                />
-                <label class="form-check-label" for="low_vram">
-                  Low VRAM Mode (Extra Optimizations)
-                </label>
-              </div>
-              <div class="form-text">
-                Adds CPU offload + VAE optimizations on top of Nunchaku's auto-detection.
-                Useful for &lt;6GB GPUs or when running other GPU-intensive apps.
-              </div>
+              <label for="rank" class="form-label">Rank</label>
+              <select class="form-select" id="rank" name="rank">
+                <option value="32">32</option>
+                <option value="128" selected>128</option>
+              </select>
             </div>
           </div>
 
@@ -201,7 +187,9 @@
               <option value="side shot">Side Shot</option>
               <option value="three-quarter view">Three-Quarter View</option>
               <option value="profile shot">Profile Shot</option>
-              <option value="over-the-shoulder shot">Over-the-Shoulder Shot</option>
+              <option value="over-the-shoulder shot">
+                Over-the-Shoulder Shot
+              </option>
 
               <!-- Lens / Optical -->
               <option value="wide angle shot">Wide-Angle Shot</option>
@@ -210,7 +198,9 @@
               <option value="macro shot">Macro Shot</option>
 
               <!-- Focus / Depth -->
-              <option value="shallow depth of field">Shallow Depth of Field</option>
+              <option value="shallow depth of field">
+                Shallow Depth of Field
+              </option>
               <option value="deep focus shot">Deep Focus Shot</option>
               <option value="bokeh background">Bokeh Background</option>
 
@@ -222,9 +212,15 @@
               <!-- AI-Friendly Presets -->
               <option value="cinematic close-up">Cinematic Close-Up</option>
               <option value="wide cinematic shot">Wide Cinematic Shot</option>
-              <option value="epic establishing shot">Epic Establishing Shot</option>
-              <option value="environmental portrait">Environmental Portrait</option>
-              <option value="intimate portrait shot">Intimate Portrait Shot</option>
+              <option value="epic establishing shot">
+                Epic Establishing Shot
+              </option>
+              <option value="environmental portrait">
+                Environmental Portrait
+              </option>
+              <option value="intimate portrait shot">
+                Intimate Portrait Shot
+              </option>
             </select>
             <div class="form-text">
               Optional: Choose a camera shot type to control composition
@@ -371,9 +367,12 @@
                   value="1.0"
                   disabled
                 />
-                <div class="form-text text-center" id="lora_scale_value">1.0</div>
+                <div class="form-text text-center" id="lora_scale_value">
+                  1.0
+                </div>
                 <div class="form-text">
-                  Controls LoRA influence (0.0 = none, 1.0 = full, >1.0 = enhanced)
+                  Controls LoRA influence (0.0 = none, 1.0 = full, >1.0 =
+                  enhanced)
                 </div>
               </div>
             </div>
@@ -425,25 +424,33 @@
   </div>
   <div class="card-body">
     <p>
-      <strong>Nunchaku Qwen</strong> provides highly optimized, quantized versions of Qwen's 
-      text-to-image models for fast and memory-efficient inference on consumer GPUs.
+      <strong>Nunchaku Qwen</strong> provides highly optimized, quantized
+      versions of Qwen's text-to-image models for fast and memory-efficient
+      inference on consumer GPUs.
     </p>
     <ul class="list-unstyled">
       <li>
-        <i class="bi bi-check-circle text-success me-2"></i>Pre-quantized for optimal performance
+        <i class="bi bi-check-circle text-success me-2"></i>Pre-quantized for
+        optimal performance
       </li>
       <li>
-        <i class="bi bi-check-circle text-success me-2"></i>Faster inference with lower VRAM usage
+        <i class="bi bi-check-circle text-success me-2"></i>Faster inference
+        with lower VRAM usage
       </li>
       <li>
-        <i class="bi bi-check-circle text-success me-2"></i>LoRA support for customization
+        <i class="bi bi-check-circle text-success me-2"></i>LoRA support for
+        customization
       </li>
       <li>
-        <i class="bi bi-check-circle text-success me-2"></i>Single GPU optimized (multi-GPU not supported)
+        <i class="bi bi-check-circle text-success me-2"></i>Single GPU optimized
+        (multi-GPU not supported)
       </li>
     </ul>
     <p class="mb-0">
-      <a href="https://nunchaku.tech/docs/nunchaku/usage/qwen-image.html" target="_blank">
+      <a
+        href="https://nunchaku.tech/docs/nunchaku/usage/qwen-image.html"
+        target="_blank"
+      >
         <i class="bi bi-book me-1"></i>Read Nunchaku Documentation
       </a>
     </p>
@@ -600,7 +607,8 @@
     if (event.detail.target.id === "result") {
       const submitBtn = document.getElementById("submit");
       if (submitBtn) {
-        submitBtn.innerHTML = '<i class="bi bi-rocket-takeoff me-1"></i>Generate Images';
+        submitBtn.innerHTML =
+          '<i class="bi bi-rocket-takeoff me-1"></i>Generate Images';
         submitBtn.disabled = false;
         // Stop progress animation (will be handled by afterSwap for success)
         if (event.detail.xhr.status !== 200) {
@@ -614,7 +622,8 @@
       stopProgressAnimation(false);
       const submitBtn = document.getElementById("submit");
       if (submitBtn) {
-        submitBtn.innerHTML = '<i class="bi bi-rocket-takeoff me-1"></i>Generate Images';
+        submitBtn.innerHTML =
+          '<i class="bi bi-rocket-takeoff me-1"></i>Generate Images';
         submitBtn.disabled = false;
       }
     }

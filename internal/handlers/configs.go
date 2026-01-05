@@ -44,6 +44,6 @@ type FluxT2IRequest struct {
 
 type QwenT2INunchakuRequest struct {
 	HandlersPythonParams
-	NunchakuModel string `form:"nunchaku_model"` // Nunchaku model selection
-	LoraScale     string `form:"lora_scale"`     // LoRA scale/weight
+	LoraScale string `form:"lora_scale"` // LoRA scale/weight
+	Rank      int64  `form:"rank"`
 }

@@ -104,7 +104,11 @@ func (h *Handler) QwenT2INunchakuAPIHandler(c *fiber.Ctx) error {
 	totalImages := len(promptsData) * req.BatchSize
 
 	// Create output directory
-	outputDir := filepath.Join("downloads", "generated", fmt.Sprintf("nunchaku_%d", time.Now().Unix()))
+	outputDir := filepath.Join(
+		"downloads",
+		"generated",
+		fmt.Sprintf("nunchaku_%d", time.Now().Unix()),
+	)
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create output directory: " + err.Error(),
@@ -158,16 +162,10 @@ func (h *Handler) QwenT2INunchakuAPIHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Use the Nunchaku model from the form
-	nunchakuModel := req.NunchakuModel
-	if nunchakuModel == "" {
-		nunchakuModel = "nunchaku-tech/nunchaku-qwen-image" // Default
-	}
-
 	// Call Python script for Nunchaku
 	args := []string{
 		"python3", "python_scripts/qwen_t2i_nunchaku.py",
-		"--model", nunchakuModel,
+		"--model", req.Model,
 		"--width", fmt.Sprintf("%d", width),
 		"--height", fmt.Sprintf("%d", height),
 		"--steps", fmt.Sprintf("%d", req.Steps),
@@ -175,14 +173,8 @@ func (h *Handler) QwenT2INunchakuAPIHandler(c *fiber.Ctx) error {
 		"--seed", fmt.Sprintf("%d", seed),
 		"--output-dir", outputDir,
 		"--num-images", fmt.Sprintf("%d", req.BatchSize),
+		"--rank", fmt.Sprintf("%d", req.Rank),
 		"--prompts", string(promptsJSON),
-	}
-
-	// Add low VRAM flag if enabled
-	if req.LowVRAM {
-		args = append(args, "--low-vram", "true")
-	} else {
-		args = append(args, "--low-vram", "false")
 	}
 
 	// Add negative prompt if provided
@@ -208,7 +200,6 @@ func (h *Handler) QwenT2INunchakuAPIHandler(c *fiber.Ctx) error {
 			args = append(args, "--lora-scale", req.LoraScale)
 		}
 	}
-
 	cmd := exec.Command(args[0], args[1:]...)
 
 	// Set up HuggingFace environment
@@ -298,7 +289,7 @@ func (h *Handler) QwenT2INunchakuAPIHandler(c *fiber.Ctx) error {
 			"seed":            seed,
 			"batch_size":      req.BatchSize,
 			"total_images":    totalImages,
-			"model":           nunchakuModel,
+			"model":           req.Model,
 			"negative_prompt": req.NegativePrompt,
 			"image_urls":      imageURLs,
 			"lora_enabled":    req.LoraEnabled,
