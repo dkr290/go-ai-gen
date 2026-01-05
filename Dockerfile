@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 go build -o go-ai-gen main.go
 # Stage 2: Python Dependencies Builder
 # ============================================
 
-FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04 AS  python-builder
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04 AS  python-builder
 
 
 ENV DEBIAN_FRONTEND=noninteractive
