@@ -68,3 +68,44 @@ The server will start on `http://localhost:8080`
 ## Some loras for testing
 
 - starsfriday/Qwen-Image-NSFW/qwen_image_nsfw.safetensors
+
+## manual build script
+
+```
+#!/bin/bash
+
+# Configuration
+GITHUB_USERNAME="YOUR_USERNAME"
+REPO_NAME="go-ai-gen"
+VERSION="v1.0.0"
+IMAGE_NAME="ghcr.io/${GITHUB_USERNAME}/${REPO_NAME}"
+
+# Check if logged in
+if ! docker info | grep -q "Username"; then
+    echo "Please login to GitHub Container Registry first:"
+    echo "echo \$GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USERNAME --password-stdin"
+    exit 1
+fi
+
+# Build
+echo "Building Docker image..."
+docker build -t ${IMAGE_NAME}:${VERSION} -t ${IMAGE_NAME}:latest .
+
+# Push
+echo "Pushing to GHCR..."
+docker push ${IMAGE_NAME}:${VERSION}
+docker push ${IMAGE_NAME}:latest
+
+echo "✓ Done! Image available at:"
+echo "  ${IMAGE_NAME}:${VERSION}"
+echo "  ${IMAGE_NAME}:latest"
+```
+
+Make it executable and run:
+
+```bash
+chmod +x build-and-push.sh
+./build-and-push.sh
+
+
+```

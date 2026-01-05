@@ -31,6 +31,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # This might remove tools that we won't need anyway
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Check available disk space
+        run: |
+          echo "Available disk space:"
+          df -h
+          echo "Docker disk usage:"
+          docker system df
+
       - name: Check if tag exists in GHCR (correct token flow)
         id: check-tag
         run: |
@@ -67,6 +86,9 @@ jobs:
       - name: Set up Docker Buildx
         if: steps.check-tag.outputs.exists == 'false'
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
 
       - name: Log in to GitHub Container Registry
         if: steps.check-tag.outputs.exists == 'false'
@@ -96,6 +118,8 @@ jobs:
           file: ${{ inputs.dockerfileName }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ inputs.docker_image_name }}:${{ inputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Skip build - tag already exists
         if: steps.check-tag.outputs.exists == 'true'
