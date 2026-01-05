@@ -1,0 +1,673 @@
+<div class="row">
+  <div class="col-12">
+    <div class="alert alert-success">
+      <h4><i class="bi bi-rocket-takeoff me-2"></i>Nunchaku Qwen Quantized Text-to-Image</h4>
+      <p class="mb-0">
+        Generate images using Nunchaku's optimized quantized Qwen models for fast, memory-efficient inference.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Generation Parameters</h5>
+      </div>
+      <div class="card-body">
+        <form
+          hx-post="/api/qwen-t2i-nunchaku"
+          hx-target="#result"
+          hx-indicator="#loading"
+          hx-timeout="0"
+        >
+          <div class="mb-3">
+            <label for="prompt" class="form-label">Prompt</label>
+            <textarea
+              class="form-control"
+              id="prompt"
+              name="prompt"
+              rows="4"
+              placeholder='["A beautiful sunset over mountains", "A futuristic city at night", "A cute cat playing with yarn"]'
+              required
+            ></textarea>
+            <div class="form-text">
+              Enter prompts as a JSON array. Qwen understands complex prompts
+              with multiple elements.
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="suffix" class="form-label"
+              >Image Enhancement Suffix</label
+            >
+            <textarea
+              class="form-control"
+              id="suffix"
+              name="suffix"
+              rows="2"
+              placeholder="Ultra HD, 4K, cinematic composition, masterpiece"
+            ></textarea>
+            <div class="form-text">
+              Add quality enhancements to your prompt (comma-separated).
+            </div>
+          </div>
+
+          <!-- Nunchaku Info Box -->
+          <div class="alert alert-info mb-3">
+            <h6 class="mb-2">
+              <i class="bi bi-info-circle me-2"></i>How Nunchaku Works
+            </h6>
+            <ul class="mb-0 small">
+              <li><strong>Automatic Precision:</strong> Nunchaku detects your GPU memory and selects optimal precision (bf16/fp16/fp32)</li>
+              <li><strong>Optimized Transformer:</strong> Uses pre-quantized transformer for faster inference</li>
+              <li><strong>Single GPU:</strong> Optimized for single GPU usage (no multi-GPU needed)</li>
+              <li><strong>Memory Efficient:</strong> Works on GPUs with 6GB+ VRAM</li>
+            </ul>
+          </div>
+
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label for="nunchaku_model" class="form-label">
+                Nunchaku Quantized Model
+                <span
+                  class="tooltip-info"
+                  title="Nunchaku uses the base model with its optimized transformer - all variants use the same repo"
+                  >ⓘ</span
+                >
+              </label>
+              <select class="form-select" id="nunchaku_model" name="nunchaku_model">
+                <option value="nunchaku-tech/nunchaku-qwen-image" selected>
+                  nunchaku-qwen-image (Optimized Transformer)
+                </option>
+              </select>
+              <div class="form-text">
+                Nunchaku automatically selects optimal precision based on your GPU memory.
+                Visit <a href="https://huggingface.co/nunchaku-tech/nunchaku-qwen-image" target="_blank">HuggingFace</a> for details.
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="aspect_ratio" class="form-label">Aspect Ratio</label>
+              <select class="form-select" id="aspect_ratio" name="aspect_ratio">
+                <option value="512x512">Small Square 1:1 (512x512)</option>
+                <option value="768x512">Small Landscape 3:2 (768x512)</option>
+                <option value="512x768">Small Portrait 2:3 (512x768)</option>
+                <option value="1024x1024">Medium Square 1:1 (1024x1024)</option>
+                <option value="1328x1328">Square 1:1-(1328, 1328)</option>
+                <option value="1472x1140">Standard 4:3-(1472, 1140)</option>
+                <option value="1664x928">Widescreen 16:9-(1664x928)</option>
+                <option value="928x1664" selected>
+                  Portrait 9x16-(928x1664)
+                </option>
+                <option value="1584x1056">Photo Big 3:2-(1584, 1056)</option>
+                <option value="1140x1472">Photo 3:4-(1140, 1472)</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label for="steps" class="form-label">Inference Steps</label>
+              <input
+                type="number"
+                class="form-control"
+                id="steps"
+                name="steps"
+                min="10"
+                max="100"
+                value="40"
+              />
+              <div class="form-text">
+                Nunchaku models converge faster (20-40 steps recommended)
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="guidance" class="form-label">Guidance Scale</label>
+              <input
+                type="range"
+                class="form-range"
+                id="guidance"
+                name="guidance"
+                min="1"
+                max="15"
+                step="0.5"
+                value="4.0"
+              />
+              <div class="form-text text-center" id="guidance_value">4.0</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="form-check form-switch mt-4">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="low_vram"
+                  name="low_vram"
+                  value="true"
+                />
+                <label class="form-check-label" for="low_vram">
+                  Low VRAM Mode (Extra Optimizations)
+                </label>
+              </div>
+              <div class="form-text">
+                Adds CPU offload + VAE optimizations on top of Nunchaku's auto-detection.
+                Useful for &lt;6GB GPUs or when running other GPU-intensive apps.
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="style_preset" class="form-label">Style Preset</label>
+            <select class="form-select" id="style_preset" name="style_preset">
+              <option value="none">No Style</option>
+              <option value="photorealistic" selected>Photorealistic</option>
+              <option value="anime">Anime</option>
+              <option value="digital_art">Digital Art</option>
+              <option value="painting">Painting</option>
+              <option value="sketch">Sketch</option>
+              <option value="watercolor">Watercolor</option>
+              <option value="cyberpunk">Cyberpunk</option>
+              <option value="fantasy">Fantasy</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="camera_shot" class="form-label">Camera Shot Type</label>
+            <select class="form-select" id="camera_shot" name="camera_shot">
+              <option value="">No specific shot (default)</option>
+              <!-- Distance / Framing -->
+              <option value="extreme close-up">Extreme Close-Up</option>
+              <option value="close-up shot">Close-Up Shot</option>
+              <option value="medium close-up">Medium Close-Up</option>
+              <option value="medium shot">Medium Shot</option>
+              <option value="full shot">Full Shot</option>
+              <option value="long shot">Long Shot</option>
+              <option value="extreme long shot">Extreme Long Shot</option>
+              <option value="establishing shot">Establishing Shot</option>
+
+              <!-- Angle / Perspective -->
+              <option value="eye-level shot">Eye-Level Shot</option>
+              <option value="high angle shot">High Angle Shot</option>
+              <option value="low angle shot">Low Angle Shot</option>
+              <option value="bird's eye view">Bird's Eye View</option>
+              <option value="worm's eye view">Worm's Eye View</option>
+              <option value="dutch angle">Dutch Angle</option>
+
+              <!-- Orientation / Direction -->
+              <option value="front shot">Front Shot</option>
+              <option value="side shot">Side Shot</option>
+              <option value="three-quarter view">Three-Quarter View</option>
+              <option value="profile shot">Profile Shot</option>
+              <option value="over-the-shoulder shot">Over-the-Shoulder Shot</option>
+
+              <!-- Lens / Optical -->
+              <option value="wide angle shot">Wide-Angle Shot</option>
+              <option value="fisheye lens">Fisheye Lens</option>
+              <option value="telephoto shot">Telephoto Shot</option>
+              <option value="macro shot">Macro Shot</option>
+
+              <!-- Focus / Depth -->
+              <option value="shallow depth of field">Shallow Depth of Field</option>
+              <option value="deep focus shot">Deep Focus Shot</option>
+              <option value="bokeh background">Bokeh Background</option>
+
+              <!-- Motion / Style -->
+              <option value="cinematic shot">Cinematic Shot</option>
+              <option value="dynamic shot">Dynamic Shot</option>
+              <option value="action shot">Action Shot</option>
+
+              <!-- AI-Friendly Presets -->
+              <option value="cinematic close-up">Cinematic Close-Up</option>
+              <option value="wide cinematic shot">Wide Cinematic Shot</option>
+              <option value="epic establishing shot">Epic Establishing Shot</option>
+              <option value="environmental portrait">Environmental Portrait</option>
+              <option value="intimate portrait shot">Intimate Portrait Shot</option>
+            </select>
+            <div class="form-text">
+              Optional: Choose a camera shot type to control composition
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="seed" class="form-label">Seed</label>
+              <input
+                type="number"
+                class="form-control"
+                id="seed"
+                name="seed"
+                placeholder="Default 42"
+                value="42"
+              />
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="static_seed"
+                  name="static_seed"
+                  value="true"
+                  checked
+                />
+                <label class="form-check-label" for="static_seed">
+                  Use static seed 42 (Qwen default)
+                </label>
+              </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label for="batch_size" class="form-label">Batch Size</label>
+              <select class="form-select" id="batch_size" name="batch_size">
+                <option value="1">1 image</option>
+                <option value="2" selected>2 images</option>
+                <option value="4">4 images</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="negative_prompt" class="form-label"
+              >Negative Prompt</label
+            >
+            <textarea
+              class="form-control"
+              id="negative_prompt"
+              name="negative_prompt"
+              rows="2"
+              placeholder="What you don't want in the image..."
+            ></textarea>
+          </div>
+
+          <div class="card mb-3">
+            <div class="card-header">
+              <h6 class="mb-0">Hugging Face Authentication (Optional)</h6>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="hf_token" class="form-label"
+                  >Hugging Face Token</label
+                >
+                <input
+                  type="password"
+                  class="form-control"
+                  id="hf_token"
+                  name="hf_token"
+                  placeholder="hf_xxxxxxxxxxxxxxxxxxxx"
+                  autocomplete="off"
+                />
+                <div class="form-text">
+                  Required for gated/private models. Get your token from
+                  <a
+                    href="https://huggingface.co/settings/tokens"
+                    target="_blank"
+                    >Hugging Face Settings</a
+                  >. Your token is only used for this request and not stored.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LoRA Section -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="lora_enabled"
+                  name="lora_enabled"
+                  value="true"
+                  onchange="toggleLoraFields()"
+                />
+                <label class="form-check-label" for="lora_enabled">
+                  <strong>Enable LoRA</strong>
+                </label>
+              </div>
+            </div>
+            <div class="card-body" id="lora_fields" style="display: none">
+              <div class="mb-3">
+                <label for="lora_url" class="form-label">LoRA File URL</label>
+                <input
+                  type="url"
+                  class="form-control"
+                  id="lora_url"
+                  name="lora_url"
+                  placeholder="https://example.com/path/to/lora.safetensors"
+                  disabled
+                />
+                <div class="form-text">
+                  URL to download LoRA weights file (safetensors or .bin)
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="lora_adapter_name" class="form-label"
+                  >Adapter Name</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="lora_adapter_name"
+                  name="lora_adapter_name"
+                  placeholder="lora"
+                  value="lora"
+                  disabled
+                />
+                <div class="form-text">
+                  Name for the LoRA adapter (default: "lora")
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="lora_scale" class="form-label">LoRA Scale</label>
+                <input
+                  type="range"
+                  class="form-range"
+                  id="lora_scale"
+                  name="lora_scale"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value="1.0"
+                  disabled
+                />
+                <div class="form-text text-center" id="lora_scale_value">1.0</div>
+                <div class="form-text">
+                  Controls LoRA influence (0.0 = none, 1.0 = full, >1.0 = enhanced)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button
+              type="button"
+              class="btn btn-secondary me-md-2"
+              onclick="resetForm()"
+            >
+              <i class="bi bi-arrow-clockwise me-1"></i>Reset
+            </button>
+            <button type="submit" class="btn btn-success" id="submit">
+              <i class="bi bi-rocket-takeoff me-1"></i>Generate Images
+            </button>
+          </div>
+
+          <!-- Progress bar container at the bottom -->
+          <div id="progressContainer" class="mt-4" style="display: none">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-muted small">Generation in progress...</span>
+              <span class="text-muted small" id="progressTime">0s</span>
+            </div>
+            <div class="progress" style="height: 8px">
+              <div
+                id="progressBar"
+                class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                role="progressbar"
+                style="width: 0%"
+              ></div>
+            </div>
+            <div class="text-center mt-2">
+              <small class="text-muted" id="progressStatus"
+                >Initializing...</small
+              >
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="result" class="mt-4"></div>
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0">About Nunchaku Qwen</h5>
+  </div>
+  <div class="card-body">
+    <p>
+      <strong>Nunchaku Qwen</strong> provides highly optimized, quantized versions of Qwen's 
+      text-to-image models for fast and memory-efficient inference on consumer GPUs.
+    </p>
+    <ul class="list-unstyled">
+      <li>
+        <i class="bi bi-check-circle text-success me-2"></i>Pre-quantized for optimal performance
+      </li>
+      <li>
+        <i class="bi bi-check-circle text-success me-2"></i>Faster inference with lower VRAM usage
+      </li>
+      <li>
+        <i class="bi bi-check-circle text-success me-2"></i>LoRA support for customization
+      </li>
+      <li>
+        <i class="bi bi-check-circle text-success me-2"></i>Single GPU optimized (multi-GPU not supported)
+      </li>
+    </ul>
+    <p class="mb-0">
+      <a href="https://nunchaku.tech/docs/nunchaku/usage/qwen-image.html" target="_blank">
+        <i class="bi bi-book me-1"></i>Read Nunchaku Documentation
+      </a>
+    </p>
+  </div>
+</div>
+
+<script>
+  // Update guidance scale value display
+  document.getElementById("guidance").addEventListener("input", function () {
+    document.getElementById("guidance_value").textContent = this.value;
+  });
+
+  // Update LoRA scale value display
+  document.getElementById("lora_scale").addEventListener("input", function () {
+    document.getElementById("lora_scale_value").textContent = this.value;
+  });
+
+  // Toggle LoRA fields
+  function toggleLoraFields() {
+    const loraEnabled = document.getElementById("lora_enabled").checked;
+    const loraFields = document.getElementById("lora_fields");
+    const loraUrl = document.getElementById("lora_url");
+    const loraAdapter = document.getElementById("lora_adapter_name");
+    const loraScale = document.getElementById("lora_scale");
+
+    if (loraEnabled) {
+      loraFields.style.display = "block";
+      loraUrl.disabled = false;
+      loraAdapter.disabled = false;
+      loraScale.disabled = false;
+      loraUrl.required = true;
+    } else {
+      loraFields.style.display = "none";
+      loraUrl.disabled = true;
+      loraAdapter.disabled = true;
+      loraScale.disabled = true;
+      loraUrl.required = false;
+    }
+  }
+
+  // Initialize on page load
+  document.addEventListener("DOMContentLoaded", function () {
+    toggleLoraFields();
+    // Set initial result message
+    document.getElementById("result").innerHTML = `
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-rocket-takeoff display-1"></i>
+        <p class="mt-2">Submit the form to generate images with Nunchaku</p>
+        <p class="small">Generated images will be saved to downloads/generated directory</p>
+      </div>
+    `;
+  });
+
+  function resetForm() {
+    document.querySelector("form").reset();
+    document.getElementById("guidance_value").textContent = "4.0";
+    document.getElementById("lora_scale_value").textContent = "1.0";
+    document.getElementById("result").innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-rocket-takeoff display-1"></i>
+                <p class="mt-2">Submit the form to generate images with Nunchaku</p>
+                <p class="small">Generated images will be saved to downloads/generated directory</p>
+            </div>
+        `;
+    toggleLoraFields();
+    // Hide progress bar on reset
+    document.getElementById("progressContainer").style.display = "none";
+    document.getElementById("submit").disabled = false;
+    document.getElementById("submit").innerHTML =
+      '<i class="bi bi-rocket-takeoff me-1"></i>Generate Images';
+  }
+
+  // Variables for progress tracking
+  let progressInterval;
+  let startTime;
+  let progressWidth = 0;
+  let isAnimating = false;
+  function startProgressAnimation() {
+    if (isAnimating) return;
+    isAnimating = true;
+    startTime = Date.now();
+    progressWidth = 0;
+    // Show progress container
+    const progressContainer = document.getElementById("progressContainer");
+    const progressBar = document.getElementById("progressBar");
+    const progressTime = document.getElementById("progressTime");
+    const progressStatus = document.getElementById("progressStatus");
+    progressContainer.style.display = "block";
+    progressBar.style.width = "0%";
+    progressStatus.textContent = "Initializing Nunchaku model...";
+    // Update timer
+    progressInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      progressTime.textContent = `${elapsed}s`;
+      // Animate progress bar (oscillating between 20% and 80% to show activity)
+      progressWidth = 20 + (Math.sin(Date.now() / 2000) * 30 + 30);
+      progressBar.style.width = `${progressWidth}%`;
+      // Update status messages based on time
+      if (elapsed < 10) {
+        progressStatus.textContent =
+          "Loading quantized model and preparing generation...";
+      } else if (elapsed < 30) {
+        progressStatus.textContent =
+          "Generating images... Nunchaku is optimized for speed!";
+      } else if (elapsed < 60) {
+        progressStatus.textContent =
+          "Still generating... Complex prompts take longer.";
+      } else {
+        progressStatus.textContent = "Processing... Generation is in progress.";
+      }
+    }, 100);
+  }
+  function stopProgressAnimation(success = true) {
+    if (!isAnimating) return;
+    clearInterval(progressInterval);
+    isAnimating = false;
+    const progressBar = document.getElementById("progressBar");
+    const progressStatus = document.getElementById("progressStatus");
+    const progressContainer = document.getElementById("progressContainer");
+    if (success) {
+      // Show completion animation
+      progressBar.style.width = "100%";
+      progressBar.classList.remove("progress-bar-animated");
+      progressBar.classList.remove("bg-success");
+      progressBar.classList.add("bg-success");
+      progressStatus.textContent = "✓ Generation completed!";
+      // Hide progress bar after 3 seconds
+      setTimeout(() => {
+        progressContainer.style.display = "none";
+        progressBar.classList.remove("bg-success");
+        progressBar.classList.add("bg-success");
+        progressBar.classList.add("progress-bar-animated");
+      }, 3000);
+    } else {
+      // Hide on error
+      progressContainer.style.display = "none";
+    }
+  }
+
+  document.addEventListener("htmx:beforeRequest", function (event) {
+    if (event.detail.target.id === "result") {
+      const submitBtn = document.getElementById("submit");
+
+      if (submitBtn) {
+        submitBtn.innerHTML =
+          '<i class="bi bi-hourglass-split me-1"></i>Generating...';
+        submitBtn.disabled = true;
+        startProgressAnimation();
+      }
+    }
+  });
+
+  document.addEventListener("htmx:afterRequest", function (event) {
+    if (event.detail.target.id === "result") {
+      const submitBtn = document.getElementById("submit");
+      if (submitBtn) {
+        submitBtn.innerHTML = '<i class="bi bi-rocket-takeoff me-1"></i>Generate Images';
+        submitBtn.disabled = false;
+        // Stop progress animation (will be handled by afterSwap for success)
+        if (event.detail.xhr.status !== 200) {
+          stopProgressAnimation(false);
+        }
+      }
+    }
+  });
+  document.addEventListener("htmx:responseError", function (event) {
+    if (event.detail.target.id === "result") {
+      stopProgressAnimation(false);
+      const submitBtn = document.getElementById("submit");
+      if (submitBtn) {
+        submitBtn.innerHTML = '<i class="bi bi-rocket-takeoff me-1"></i>Generate Images';
+        submitBtn.disabled = false;
+      }
+    }
+  });
+
+  document.addEventListener("htmx:afterSwap", function (event) {
+    if (event.detail.target.id === "result") {
+      const response = event.detail.xhr.response;
+      try {
+        const data = JSON.parse(response);
+        // Check for the correct response structure
+        if (data.success === true && data.data && data.data.image_urls) {
+          stopProgressAnimation(true);
+          document.getElementById("result").innerHTML = `
+            <div class="alert alert-success">
+              <i class="bi bi-check-circle me-2"></i>
+              <strong>Success!</strong> Generated ${data.data.total_images} images with Nunchaku.
+              <p class="mt-2 mb-0">Images have been saved to the downloads/generated directory.</p>
+            </div>
+          `;
+        } else if (data.error) {
+          stopProgressAnimation(false);
+
+          // Show error message
+          document.getElementById("result").innerHTML = `
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Error:</strong> ${data.error}
+          </div>
+        `;
+        } else {
+          stopProgressAnimation(false);
+
+          // Fallback for unexpected response
+          document.getElementById("result").innerHTML = `
+          <div class="alert alert-warning">
+            <i class="bi bi-info-circle me-2"></i>
+            Unexpected response format. Check console for details.
+          </div>
+        `;
+          console.log("Unexpected response:", data);
+        }
+      } catch (e) {
+        console.error("Failed to parse response:", e);
+        stopProgressAnimation(false);
+
+        document.getElementById("result").innerHTML = `
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Error parsing response:</strong> ${e.message}
+        </div>
+      `;
+      }
+    }
+  });
+</script>

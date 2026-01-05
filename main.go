@@ -38,6 +38,8 @@ func main() {
 	app.Get("/sd-i2i", h.SdI2IHandler)
 	app.Get("/qwen-t2i", h.QwenT2IHandler)
 	app.Post("/api/qwen-t2i", h.QwenT2IAPIHandler)
+	app.Get("/qwen-t2i-nunchaku", h.QwenT2INunchakuHandler)
+	app.Post("/api/qwen-t2i-nunchaku", h.QwenT2INunchakuAPIHandler)
 	app.Get("/qwen-i2i-single", h.QwenI2ISingleHandler)
 	app.Get("/qwen-i2i-multi", h.QwenI2IMultiHandler)
 	app.Get("/file-server", h.FileServerHandler)

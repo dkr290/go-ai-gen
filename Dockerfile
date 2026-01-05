@@ -70,6 +70,7 @@ RUN pip3 install --no-cache-dir \
   bitsandbytes \
   hf_transfer \
   gguf>=0.10.0 \
+  nunchaku-qwen \
   peft  && \
   rm -rf ~/.cache/pip && \ 
   mkdir -p  /app/downloads && \
