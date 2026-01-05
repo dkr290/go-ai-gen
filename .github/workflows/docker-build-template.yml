@@ -31,30 +31,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check if tag exists in GHCR (correct token flow)
+      - name: Check if tag exists in GHCR
         id: check-tag
         run: |
-          IMAGE_NAME="${{ inputs.docker_image_name }}"
-          TAG="${{ inputs.version }}"
-          REPO="${IMAGE_NAME#ghcr.io/}"
+          IMAGE="${{ inputs.docker_image_name }}:${{ inputs.version }}"
 
-          echo "Checking if tag exists: $IMAGE_NAME:$TAG"
-          # Login first to access private packages
-          # Use GitHub token directly with GHCR v2 API
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-          -H "Accept: application/vnd.oci.image.manifest.v1+json" \
-          -I "https://ghcr.io/v2/${REPO}/manifests/${TAG}")
+          echo "Checking: $IMAGE"
 
-          echo "Response code: $HTTP_CODE"
-
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✓ Tag $TAG exists, skipping build"
+          if docker manifest inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "✓ Tag exists, skipping build"
             echo "exists=true" >> $GITHUB_OUTPUT
-          elif [ "$HTTP_CODE" = "404" ]; then
-            echo "✗ Tag $TAG not found, will build"
-            echo "exists=false" >> $GITHUB_OUTPUT
           else
-            echo "⚠ Unexpected response ($HTTP_CODE), will build to be safe"
+            echo "✗ Tag not found, will build"
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
