@@ -71,8 +71,11 @@ RUN pip3 install --no-cache-dir \
   bitsandbytes \
   hf_transfer \
   gguf>=0.10.0 \
-  git+https://github.com/nunchaku-tech/nunchaku.git \
   peft  && \
+  rm -rf ~/.cache/pip
+
+# Install Nunchaku separately (uses existing torch)
+RUN pip3 install --no-cache-dir git+https://github.com/nunchaku-tech/nunchaku.git && \
   rm -rf ~/.cache/pip && \ 
   mkdir -p  /app/downloads && \
   mkdir -p /run/sshd && \
@@ -80,6 +83,8 @@ RUN pip3 install --no-cache-dir \
   sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
   sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
   chmod +x /app/start.sh
+
+
 
 #   && echo "export HF_HOME=/app/models/.cache" > /etc/profile.d/hf_home.sh
 
