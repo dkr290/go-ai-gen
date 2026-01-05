@@ -42,7 +42,6 @@ jobs:
           # Login first to access private packages
           # Use GitHub token directly with GHCR v2 API
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Accept: application/vnd.oci.image.manifest.v1+json" \
           -I "https://ghcr.io/v2/${REPO}/manifests/${TAG}")
 
