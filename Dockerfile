@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 go build -o go-ai-gen main.go
 # Stage 2: Python Dependencies Builder
 # ============================================
 
-FROM nvidia/cuda:12.4.1-devel-ubuntu22.04 AS  python-builder
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
 
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -36,8 +36,13 @@ RUN apt-get update && apt-get install -y  \
   python3 \
   python3-pip \
   python3-venv \
-  git \
-  && rm -rf /var/lib/apt/lists/* 
+  ca-certificates \
+  openssh-server \
+  vim \
+  nano \
+  htop \
+  && rm -rf /var/lib/apt/lists/*
+
 # Install torch first (largest package)
 RUN pip3 install --no-cache-dir torch torchvision torchaudio   && \
   rm -rf ~/.cache/pip /tmp/*
@@ -62,27 +67,6 @@ RUN pip3 install --no-cache-dir \
 RUN pip3 install --no-cache-dir \
   https://github.com/nunchaku-tech/nunchaku/releases/download/v1.1.0/nunchaku-1.1.0+torch2.11-cp310-cp310-linux_x86_64.whl && \
   rm -rf ~/.cache/pip /tmp/* /var/tmp/* /root/.cache/*
-
-# ============================================
-# Stage 3: Final Runtime Image
-# ============================================
-FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
-
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHONUNBUFFERED=1
-# Install minimal runtime deps
-RUN apt-get update && apt-get install -y \
-  python3 \
-  python3-pip \
-  ca-certificates \
-  openssh-server \
-  vim \
-  nano \
-  htop \
-  && rm -rf /var/lib/apt/lists/*
-
-# Copy Python packages from builder
-COPY --from=python-builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
 
 WORKDIR /app
 
