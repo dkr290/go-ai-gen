@@ -23,11 +23,11 @@ RUN CGO_ENABLED=0 go build -o go-ai-gen main.go
 
 
 # ============================================
-# Stage 2: Runtime - Minimal production image
+# Stage 2: Python Dependencies Builder
 # ============================================
 
-#FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
-FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04 AS  python-builder
+
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -36,30 +36,14 @@ RUN apt-get update && apt-get install -y  \
   python3 \
   python3-pip \
   python3-venv \
-  ca-certificates \
-  openssh-server \
   git \
-  vim \
-  nano \
-  htop \
   && rm -rf /var/lib/apt/lists/* 
-
-
-
-
-WORKDIR /app
-
-COPY --from=builder /app/go-ai-gen /app/
-
-# Copy Python script
-COPY python_scripts/*.py /app/python_scripts/
-# Copy startup script
-COPY start.sh /app/start.sh
-
+# Install torch first (largest package)
+RUN pip3 install --no-cache-dir torch  && \
+  rm -rf ~/.cache/pip /tmp/*
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir \
-  torch \
   diffusers \
   transformers \
   accelerate \
@@ -72,12 +56,46 @@ RUN pip3 install --no-cache-dir \
   hf_transfer \
   gguf>=0.10.0 \
   peft  && \
-  rm -rf ~/.cache/pip
+  rm -rf ~/.cache/pip /tmp/*
+
+# Install Nunchaku
+RUN pip3 install --no-cache-dir --no-build-isolation \
+  git+https://github.com/nunchaku-tech/nunchaku.git && \
+  rm -rf ~/.cache/pip /tmp/* /var/tmp/* /root/.cache/*
+
+# ============================================
+# Stage 3: Final Runtime Image
+# ============================================
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+# Install minimal runtime deps
+RUN apt-get update && apt-get install -y \
+  python3 \
+  python3-pip \
+  ca-certificates \
+  openssh-server \
+  vim \
+  nano \
+  htop \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copy Python packages from builder
+COPY --from=python-builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+
+WORKDIR /app
+
+COPY --from=builder /app/go-ai-gen /app/
+# Copy Python script
+COPY python_scripts/*.py /app/python_scripts/
+# Copy startup script
+COPY start.sh /app/start.sh
+
+
 
 # Install Nunchaku separately (uses existing torch)
-RUN pip3 install --no-cache-dir git+https://github.com/nunchaku-tech/nunchaku.git && \
-  rm -rf ~/.cache/pip && \ 
-  mkdir -p  /app/downloads && \
+RUN  mkdir -p  /app/downloads && \
   mkdir -p /run/sshd && \
   echo 'root:root' | chpasswd && \
   sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
