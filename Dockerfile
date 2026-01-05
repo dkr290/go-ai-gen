@@ -38,6 +38,7 @@ RUN apt-get update && apt-get install -y  \
   python3-venv \
   ca-certificates \
   openssh-server \
+  git \
   vim \
   nano \
   htop \
@@ -70,7 +71,7 @@ RUN pip3 install --no-cache-dir \
   bitsandbytes \
   hf_transfer \
   gguf>=0.10.0 \
-  nunchaku-qwen \
+  git+https://github.com/nunchaku-tech/nunchaku.git \
   peft  && \
   rm -rf ~/.cache/pip && \ 
   mkdir -p  /app/downloads && \
