@@ -39,7 +39,7 @@ RUN apt-get update && apt-get install -y  \
   git \
   && rm -rf /var/lib/apt/lists/* 
 # Install torch first (largest package)
-RUN pip3 install --no-cache-dir torch  && \
+RUN pip3 install --no-cache-dir torch torchvision torchaudio   && \
   rm -rf ~/.cache/pip /tmp/*
 
 # Install Python dependencies
@@ -58,9 +58,9 @@ RUN pip3 install --no-cache-dir \
   peft  && \
   rm -rf ~/.cache/pip /tmp/*
 
-# Install Nunchaku
-RUN pip3 install --no-cache-dir --no-build-isolation \
-  git+https://github.com/nunchaku-tech/nunchaku.git && \
+# Install Nunchaku from pre-built wheel (v1.1.0, no compilation!)
+RUN pip3 install --no-cache-dir \
+  https://github.com/nunchaku-tech/nunchaku/releases/download/v1.1.0/nunchaku-1.1.0+torch2.11-cp310-cp310-linux_x86_64.whl && \
   rm -rf ~/.cache/pip /tmp/* /var/tmp/* /root/.cache/*
 
 # ============================================

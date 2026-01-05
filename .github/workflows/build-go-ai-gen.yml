@@ -9,17 +9,6 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 jobs:
-  # This workflow contains a single job called "build"
-  cleanup:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clean up disk space before build
-        run: |
-          docker system prune -a -f --volumes || true
-          sudo apt-get clean
-          sudo rm -rf /var/log/*.gz /var/log/*.log.*
-          df -h
-
   build-api-service:
     needs: cleanup
     uses: dkr290/go-ai-gen/.github/workflows/docker-build-template.yml@main
