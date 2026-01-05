@@ -38,30 +38,25 @@ jobs:
           TAG="${{ inputs.version }}"
           REPO="${IMAGE_NAME#ghcr.io/}"
 
-          echo "Checking if tag exists via GHCR API: $IMAGE_NAME:$TAG"
+          echo "Checking if tag exists: $IMAGE_NAME:$TAG"
+          # Login first to access private packages
+          # Use GitHub token directly with GHCR v2 API
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.oci.image.manifest.v1+json" \
+          -I "https://ghcr.io/v2/${REPO}/manifests/${TAG}")
 
-          # Request a registry token for the repo
-          TOKEN=$(curl -s \
-            -u "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
-            "https://ghcr.io/token?scope=repository:$REPO:pull" \
-            | jq -r '.token')
+          echo "Response code: $HTTP_CODE"
 
-          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
-            echo "Failed to obtain registry token"
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✓ Tag $TAG exists, skipping build"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          elif [ "$HTTP_CODE" = "404" ]; then
+            echo "✗ Tag $TAG not found, will build"
             echo "exists=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # Query manifest
-          if curl -s -f \
-            -H "Authorization: Bearer $TOKEN" \
-            -H "Accept: application/vnd.oci.image.manifest.v1+json" \
-            "https://ghcr.io/v2/$REPO/manifests/$TAG" > /dev/null; then
-              echo "Tag exists, skipping build"
-              echo "exists=true" >> $GITHUB_OUTPUT
           else
-              echo "Tag does not exist, will build"
-              echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠ Unexpected response ($HTTP_CODE), will build to be safe"
+            echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Skip build - tag already exists
